@@ -4,7 +4,7 @@ const mysqlPool = mysql.createPool({
   host: "localhost",
   user: "root",
   password: "root123",
-  database: "icafeconnect",
+  database: "icafes",
 });
 
 

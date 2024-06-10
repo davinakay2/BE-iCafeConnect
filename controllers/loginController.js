@@ -13,7 +13,7 @@ router.get("/login", async (req, res) => {
   } else {
     const user = await service.loginVerification(userBody, passwordBody);
     if (user.length == 0) {
-      res.status(404).json("Username/ Email Or Password is Wrong!");
+      res.status(404).json("Username/Email Or Password is Wrong!");
     }
     res.send(user);
   }
