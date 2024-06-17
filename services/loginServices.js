@@ -1,8 +1,9 @@
-const db = require("../db");
+const {db, db2} = require("../db");
+const bcrypt = require('bcrypt');
 
 module.exports.loginVerification = async (userBody, passwordBody) => {
   const [user] = await db.query(
-    "SELECT * FROM `user` WHERE (UserName = ? OR UserEmail = ?) AND UserPassword = ?;",
+    "SELECT * FROM `icafe_users` WHERE (username = ? OR email = ?) AND password = ?;",
     [userBody, userBody, passwordBody]
   );
   return user;
@@ -10,7 +11,7 @@ module.exports.loginVerification = async (userBody, passwordBody) => {
 
 module.exports.userValidity = async (userBody) => {
   const [userValidation] = await db.query(
-    "SELECT UserName FROM `user` WHERE UserName = ? OR UserEmail = ?",
+    "SELECT username FROM `icafe_users` WHERE username = ? OR email = ?",
     [userBody, userBody]
   );
   return userValidation;
@@ -18,7 +19,7 @@ module.exports.userValidity = async (userBody) => {
 
 module.exports.usernameValidity = async (usernameBody) => {
   const [usernameValidation] = await db.query(
-    "SELECT UserName FROM `user` WHERE UserName = ?",
+    "SELECT username FROM `icafe_users` WHERE username = ?",
     [usernameBody]
   );
   return usernameValidation;
@@ -26,7 +27,7 @@ module.exports.usernameValidity = async (usernameBody) => {
 
 module.exports.emailValidity = async (emailBody) => {
   const [emailValidation] = await db.query(
-    "SELECT UserName FROM `user` WHERE UserEmail = ?",
+    "SELECT username FROM `icafe_users` WHERE email = ?",
     [emailBody]
   );
   return emailValidation;
@@ -40,8 +41,26 @@ module.exports.addUser = async (
   phonenumberBody
 ) => {
   const [{ affectedRows }] = await db.query(
-    "INSERT INTO `user` (`UserName`, `UserPassword`, `UserEmail`, `UserFullName`, `UserPhone`) VALUES (?, ?, ?, ?, ?);",
+    "INSERT INTO `icafe_users` (`username`, `password`, `email`, `fullname`, `phone`) VALUES (?, ?, ?, ?, ?);",
     [usernameBody, passwordBody, emailBody, fullnameBody, phonenumberBody]
   );
   return affectedRows;
+};
+
+module.exports.updatePassword = async (emailBody, newPassword) => {
+  // Hash the new password
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+  const [result] = await db.query(
+    "UPDATE `icafe_users` SET password = ? WHERE email = ?",
+    [hashedPassword, emailBody]
+  );
+
+  // Check if the update was successful
+  if (result.affectedRows > 0) {
+    return { success: true, message: 'Password updated successfully' };
+  } else {
+    return { success: false, message: 'No user found with the provided email' };
+  }
 };

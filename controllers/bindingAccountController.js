@@ -1,7 +1,7 @@
 const express = require("express"),
-  router = express.Router();
+router = express.Router();
 
-  const service = require("../services/bindingAccountServices");
+const service = require("../services/bindingAccountServices");
 
 router.get("/getExternalAccount", async (req, res) => {
 

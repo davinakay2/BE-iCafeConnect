@@ -7,12 +7,16 @@ const {db, db2} = require('./db'),
     loginRoutes = require('./controllers/loginController')
     homeRoutes = require('./controllers/homeController')
     bindingAccountRoutes = require('./controllers/bindingAccountController')
+    paymentRoutes = require('./controllers/paymentController')
+    settingsRoutes = require('./controllers/settingsController')
 
 //middleware
 app.use(bodyparser.json())
 app.use('/loginpage', loginRoutes)
 app.use('/homepage', homeRoutes)
 app.use('/bindingaccountpage', bindingAccountRoutes)
+app.use('/paymentpage', paymentRoutes)
+app.use('/settingspage', settingsRoutes)
 app.use((err, req, res, next) => {
     console.log(err)
     res.status(err.status || 500).send('Something went wrong!')
