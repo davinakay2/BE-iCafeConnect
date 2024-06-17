@@ -1,12 +1,22 @@
 const {db, db2} = require("../db");
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 module.exports.loginVerification = async (userBody, passwordBody) => {
   const [user] = await db.query(
-    "SELECT * FROM `icafe_users` WHERE (username = ? OR email = ?) AND password = ?;",
-    [userBody, userBody, passwordBody]
+    "SELECT username FROM `icafe_users` WHERE username = ? OR email = ?",
+    [userBody, userBody]
   );
-  return user;
+
+  if (user && await bcrypt.compare(passwordBody, user.password)) {
+    // Generate JWT
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+    return { user, token };
+  } else {
+    return null;
+  }
 };
 
 module.exports.userValidity = async (userBody) => {
@@ -40,9 +50,10 @@ module.exports.addUser = async (
   fullnameBody,
   phonenumberBody
 ) => {
+  const hashedPassword = await bcrypt.hash(passwordBody, 10);
   const [{ affectedRows }] = await db.query(
     "INSERT INTO `icafe_users` (`username`, `password`, `email`, `fullname`, `phone`) VALUES (?, ?, ?, ?, ?);",
-    [usernameBody, passwordBody, emailBody, fullnameBody, phonenumberBody]
+    [usernameBody, hashedPassword, emailBody, fullnameBody, phonenumberBody]
   );
   return affectedRows;
 };

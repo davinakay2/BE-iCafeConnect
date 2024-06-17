@@ -2,6 +2,7 @@ const express = require('express'),
     app = express(),
     bodyparser = require('body-parser')
 require('express-async-errors')
+require('dotenv').config();
 
 const {db, db2} = require('./db'), 
     loginRoutes = require('./controllers/loginController')

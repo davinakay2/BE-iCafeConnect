@@ -1,6 +1,5 @@
 const express = require("express"),
 router = express.Router();
-
 const service = require("../services/loginServices");
 
 const nodemailer = require('nodemailer');
@@ -18,20 +17,20 @@ const app = express();
 app.use(bodyParser.json());
 let userOtp = {};
 
-router.get("/login", async (req, res) => {
-  const userBody = req.body.user;
-  const passwordBody = req.body.password;
+router.post("/login", async (req, res) => {
+  const { user: userBody, password: passwordBody } = req.body;
 
   const userValidation = await service.userValidity(userBody);
   if (userValidation.length == 0) {
-    res.status(404).json("Account is not Registered!");
-  } else {
-    const user = await service.loginVerification(userBody, passwordBody);
-    if (user.length == 0) {
-      res.status(404).json("Username/Email Or Password is Wrong!");
-    }
-    res.send(user);
+    return res.status(404).json("Account is not Registered!");
   }
+
+  const user = await service.loginVerification(userBody, passwordBody);
+  if (!user) {
+    return res.status(404).json("Username/Email Or Password is Wrong!");
+  }
+
+  res.json(user);
 });
 
 router.post("/register", async (req, res) => {
@@ -44,12 +43,12 @@ router.post("/register", async (req, res) => {
   } = req.body;
 
   const userValidation = await service.userValidity(usernameBody);
-  if (userValidation != 0) {
-    res.status(404).send("Username is Taken!");
+  if (userValidation.length != 0) {
+    return res.status(404).send("Username is Taken!");
   }
   const emailValidity = await service.emailValidity(emailBody);
-  if (emailValidity != 0) {
-    res.status(404).send("Email is Taken!");
+  if (emailValidity.length != 0) {
+    return res.status(404).send("Email is Taken!");
   }
   const affectedRows = await service.addUser(
     usernameBody,
