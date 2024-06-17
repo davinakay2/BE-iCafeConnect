@@ -85,13 +85,11 @@ app.post('/request-otp', (req, res) => {
     res.status(200).send('OTP sent');
   });
 
-  // Set a timeout to invalidate the OTP after 5 minutes
   setTimeout(() => {
     delete userOtp[email];
   }, 300000); // 300,000 ms = 5 minutes
 });
 
-// Route to verify OTP
 app.post('/verify-otp', (req, res) => {
   const { email, otp } = req.body;
 

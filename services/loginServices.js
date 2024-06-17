@@ -12,7 +12,7 @@ module.exports.loginVerification = async (userBody, passwordBody) => {
 
   if (user && await bcrypt.compare(passwordBody, user.password)) {
     // Generate JWT
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1y' });
     return { user, token };
   } else {
     return null;
