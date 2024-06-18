@@ -6,17 +6,23 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 module.exports.loginVerification = async (userBody, passwordBody) => {
   const [user] = await db.query(
-    "SELECT username FROM `icafe_users` WHERE username = ? OR email = ?",
+    "SELECT userid, username, password FROM icafe_users WHERE username = ? OR email = ?",
     [userBody, userBody]
   );
 
-  if (user && await bcrypt.compare(passwordBody, user.password)) {
+  console.log("User from DB:", user);
+
+  if (user && (await bcrypt.compare(passwordBody, user[0].password))) {
     // Generate JWT
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1y' });
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: "1y" }
+    );
     return { user, token };
   } else {
-    return null;
-  }
+    return null;
+  }
 };
 
 module.exports.userValidity = async (userBody) => {
