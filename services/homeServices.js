@@ -32,6 +32,13 @@ module.exports.getPriceLabel = async() => {
     return [icafes];
   };
 
+module.exports.getAlliCafes = async () => {
+    const [icafes] = await db.query(
+      "SELECT `name`, `open_time`, `close_time`, `address`, `rating` FROM `icafe_info`;"
+    );
+    return icafes;
+};  
+
 module.exports.getSearchediCafes = async (iCafeName) => {
     const [icafes] = await db.query(
       "SELECT `name`, `open_time`, `close_time`, `address`, `rating` FROM `icafe_info` WHERE name = ?;",

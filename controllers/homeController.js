@@ -79,6 +79,17 @@ app.get('/image/:filename', async (req, res) => {
   }
 });
 
+router.get("/getAlliCafes", async (req, res) => {
+  try {
+      const [alliCafes] = await service.getAlliCafes();
+      res.json(alliCafes);
+    } catch (error) {
+      console.error("Error fetching all iCafes:", error);
+      res.status(500).send("An error occurred while fetching all iCafes.");
+    }
+
+});
+
 router.get("/getSearchediCafes", async (req, res) => {
   try {
       const [searchediCafes] = await service.getSearchediCafes();
