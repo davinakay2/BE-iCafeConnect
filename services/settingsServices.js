@@ -1,5 +1,8 @@
 const {db, db2} = require("../db");
 const bcrypt = require('bcrypt');
+const { Storage } = require('@google-cloud/storage');
+const storage = new Storage({ keyFilename: '../services/settingsServices.json' });
+const bucket = storage.bucket('profile-bucket');
 
 module.exports.getUserProfile = async (userId) => {
     const [userData] = await db.query(
@@ -69,4 +72,34 @@ module.exports.updateUser = async (userId, username, email, fullname, phone) => 
     return affectedRows > 0
       ? { success: true, message: 'Password updated successfully' }
       : { success: false, message: 'Password update failed' };
-  };  
+  }; 
+
+  module.exports.uploadProfilePicture = async (userId, file) => {
+    const blob = bucket.file(file.originalname);
+    const blobStream = blob.createWriteStream({ resumable: false });
+  
+    return new Promise((resolve, reject) => {
+      blobStream.on('error', (err) => reject(err));
+      
+      blobStream.on('finish', async () => {
+        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+        await db.query(
+          "UPDATE icafe_users SET profile_picture_url = ? WHERE userid = ?",
+          [publicUrl, userId]
+        );
+        resolve(publicUrl);
+      });
+  
+      blobStream.end(file.buffer);
+    });
+  };
+  
+  module.exports.getProfilePicture = async (userId) => {
+    const [result] = await db.query(
+      "SELECT profile_picture_url FROM icafe_users WHERE userid = ?",
+      [userId]
+    );
+    return result.length ? result[0].profile_picture_url : null;
+  };
+  
+  

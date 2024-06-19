@@ -1,17 +1,19 @@
 const express = require("express"),
 router = express.Router();
-
 const service = require("../services/homeServices");
-const multer = require("multer");
-const { Storage } = require('@google-cloud/storage');
 
-const storage = new Storage({ keyFilename: '../services/homeServices.json' }); // Ensure you have the right permissions
-const bucket = storage.bucket('promo-bucket');
-const app = express();
-// const port = 3000;
-
-const upload = multer({
-  storage: multer.memoryStorage(),
+router.get('/getPromoBanner', async (req, res) => {
+  try {
+    const bannerUrl = await service.getPromoBanner();
+    if (bannerUrl) {
+      res.status(200).json({ success: true, bannerUrl });
+    } else {
+      res.status(404).json({ success: false, message: 'Promo banner not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching promo banner:', error);
+    res.status(500).json({ success: false, message: 'An error occurred while fetching promo banner' });
+  }
 });
 
 router.get("/getFeaturediCafes", async (req, res) => {
@@ -30,54 +32,6 @@ router.get("/getPriceLabel", async (req,res) => {
   console.log(priceLabeliCafes);
   res.json(priceLabeliCafes);
 })
-
-app.post('/upload', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      res.status(400).send('No file uploaded.');
-      return;
-    }
-
-    const blob = bucket.file(req.file.originalname);
-    const blobStream = blob.createWriteStream({
-      resumable: false,
-    });
-
-    blobStream.on('error', (err) => {
-      console.error(err);
-      res.status(500).send('Upload error');
-    });
-
-    blobStream.on('finish', () => {
-      res.status(200).send('File uploaded.');
-    });
-
-    blobStream.end(req.file.buffer);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Upload error');
-  }
-});
-
-app.get('/image/:filename', async (req, res) => {
-  const { filename } = req.params;
-  const file = bucket.file(filename);
-
-  try {
-    const [metadata] = await file.getMetadata();
-    res.setHeader('Content-Type', metadata.contentType);
-
-    file.createReadStream()
-      .on('error', err => {
-        console.error(err);
-        res.status(500).send('Error retrieving the image');
-      })
-      .pipe(res);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Error retrieving the image');
-  }
-});
 
 router.get("/getAlliCafes", async (req, res) => {
   try {
@@ -120,14 +74,23 @@ router.get("/getUserBilling", async (req, res) => {
 
 router.get("/getUsername", async (req, res) => {
   try {
-      const [username] = await service.getUsername();
-      res.json(username);
-    } catch (error) {
-      console.error("Error fetching username:", error);
-      res.status(500).send("An error occurred while fetching username.");
+    const userId = req.query.userid;
+    if (!userId) {
+      return res.status(400).json({ error: "Missing userid parameter" });
     }
 
+    const [username] = await service.getUsername(userId);
+    if (username) {
+      res.json(username);
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error fetching username:", error);
+    res.status(500).send("An error occurred while fetching username.");
+  }
 });
+
 
 router.get("/getiCafeDetails", async (req, res) => {
   try {

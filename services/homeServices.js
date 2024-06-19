@@ -1,8 +1,15 @@
 const {db, db2} = require("../db");
 
+module.exports.getPromoBanner = async () => {
+  const [result] = await db.query(
+    "SELECT banner_url FROM promotions WHERE promoid = 1"
+  );
+  return result.length ? result[0].banner_url : null;
+};
+
 module.exports.getFeaturediCafes = async () => {
     const [icafes] = await db.query(
-      "SELECT `name`, `address`, `rating` FROM `icafe_info` WHERE `featuredYN` = 'Y';"
+      "SELECT name, address, rating FROM icafe_info WHERE featuredYN = 'Y';"
     );
     return [icafes];
   };
@@ -33,15 +40,15 @@ module.exports.getPriceLabel = async() => {
   };
 
 module.exports.getAlliCafes = async () => {
-    const [icafes] = await db.query(
-      "SELECT `name`, `open_time`, `close_time`, `address`, `rating` FROM `icafe_info`;"
-    );
-    return icafes;
-};  
+  const [icafes] = await db.query(
+    "SELECT icafe_id, name, open_time, close_time, address, rating FROM icafe_info;"
+  );
+  return [icafes];
+};
 
 module.exports.getSearchediCafes = async (iCafeName) => {
     const [icafes] = await db.query(
-      "SELECT `name`, `open_time`, `close_time`, `address`, `rating` FROM `icafe_info` WHERE name = ?;",
+      "SELECT name, open_time, close_time, address, rating FROM icafe_info WHERE name = ?;",
       [iCafeName]
     );
     return [icafes];
@@ -49,23 +56,23 @@ module.exports.getSearchediCafes = async (iCafeName) => {
   
   module.exports.getUserBilling = async (accountId) => {
     const [billing] = await db2.query(
-      "SELECT `regular_billing`, `vip_billing`, `vvip_billing` FROM `accounts` WHERE `account_id` = ?;",
+      "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE account_id = ?;",
       [accountId]
     );
     return [billing];
   };
 
   module.exports.getUsername = async (userId) => {
-    const [username] = await db.query(
-      "SELECT `username` FROM `icafe_users` WHERE `userid` = ?;",
-      [userId]
-    );
-    return [username];
-  };
+  const [result] = await db.query(
+    "SELECT username FROM icafe_users WHERE userid = ?;",
+    [userId]
+  );
+  return result;
+};
 
   module.exports.getiCafeDetails = async (detailsId) => {
     const [details] = await db.query(
-      "SELECT `pc_category`, `price`, `total_computers`, `available_computers` FROM `icafe_details` WHERE `icafe_detail_id` = ?;",
+      "SELECT pc_category, price, total_computers, available_computers FROM icafe_details WHERE icafe_detail_id = ?;",
       [detailsId]
     );
     return [details];
@@ -73,7 +80,7 @@ module.exports.getSearchediCafes = async (iCafeName) => {
 
   module.exports.getComputerSpecs = async (detailsId) => {
     const [specs] = await db.query(
-      "SELECT `pc_category`, `description` FROM `icafe_details` WHERE `icafe_detail_id` = ?;",
+      "SELECT pc_category, description FROM icafe_details WHERE icafe_detail_id = ?;",
       [detailsId]
     );
     return [specs];
@@ -81,9 +88,9 @@ module.exports.getSearchediCafes = async (iCafeName) => {
 
   module.exports.geteWalletBalance = async (userId) => {
     const [balance] = await db.query(
-      "SELECT `ewallet_balance` FROM `icafe_users` WHERE userid = ?;",
+      "SELECT ewallet_balance FROM icafe_users WHERE userid = ?;",
       [userId]
     );
-    return [balance];
+    return balance;
   };
   
