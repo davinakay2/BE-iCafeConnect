@@ -90,15 +90,21 @@ router.get("/getAlliCafes", async (req, res) => {
 
 });
 
-router.get("/getSearchediCafes", async (req, res) => {
-  try {
-      const [searchediCafes] = await service.getSearchediCafes();
-      res.json(searchediCafes);
-    } catch (error) {
-      console.error("Error fetching searched iCafes:", error);
-      res.status(500).send("An error occurred while fetching searched iCafes.");
-    }
+router.get('/getSearchediCafes', async (req, res) => {
+  const { iCafeName } = req.query; 
 
+  try {
+    const icafes = await service.getSearchediCafes(iCafeName);
+
+    if (icafes.length > 0) {
+      res.status(200).json({ success: true, icafes });
+    } else {
+      res.status(404).json({ success: false, message: 'No iCafes found with the given name' });
+    }
+  } catch (error) {
+    console.error('Error fetching iCafes:', error);
+    res.status(500).json({ success: false, message: 'An error occurred while fetching iCafes' });
+  }
 });
 
 router.get("/getUserBilling", async (req, res) => {

@@ -1,6 +1,25 @@
 const {db, db2} = require("../db");
 const bcrypt = require('bcrypt');
 
+module.exports.getUserProfile = async (userId) => {
+    const [userData] = await db.query(
+      "SELECT `fullname`, `username`, `email`, `phone` FROM `icafe_users` WHERE `userid` = ?",
+      [userId]
+    );
+  
+    if (userData.length > 0) {
+    
+      return {
+        fullname: userData[0].fullname,
+        username: userData[0].username,
+        email: userData[0].email,
+        phone: userData[0].phone
+      };
+    } else {
+      return null; 
+    }
+  };
+
 module.exports.updateUser = async (userId, username, email, fullname, phone) => {
     const [{ affectedRows }] = await db.query(
       "UPDATE `icafe_users` SET `username` = ?, `email` = ?, `fullname` = ?, `phone` = ? WHERE `userid` = ?",

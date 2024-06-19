@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 let userOtp = {};
 
 router.post("/login", async (req, res) => {
-  const { user: userBody, password: passwordBody } = req.body;
+  const { username: userBody, password: passwordBody } = req.body;
 
   const userValidation = await service.userValidity(userBody);
   if (userValidation.length == 0) {

@@ -7,6 +7,23 @@ const app = express();
 
 app.use(bodyParser.json());
 
+app.get('/getUserProfile', async (req, res) => {
+    const { userId } = req.query; 
+  
+    try {
+      const userDetails = await userService.getUserProfile(userId);
+  
+      if (userDetails) {
+        res.status(200).json({ success: true, userDetails });
+      } else {
+        res.status(404).json({ success: false, message: 'User not found' });
+      }
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      res.status(500).json({ success: false, message: 'An error occurred while fetching user details' });
+    }
+  });
+
 app.put('/updateUser', async (req, res) => {
     const { userId, username, email, fullname, phone } = req.body;
   
