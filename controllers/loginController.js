@@ -64,7 +64,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-app.post('/request-otp', (req, res) => {
+router.post('/request-otp', (req, res) => {
   const { email } = req.body;
   const otp = generateOtp();
 
@@ -90,7 +90,7 @@ app.post('/request-otp', (req, res) => {
   }, 300000); // 300,000 ms = 5 minutes
 });
 
-app.post('/verify-otp', (req, res) => {
+router.post('/verify-otp', (req, res) => {
   const { email, otp } = req.body;
 
   if (userOtp[email] === otp) {
@@ -102,7 +102,7 @@ app.post('/verify-otp', (req, res) => {
 });
 
 // Route to reset password
-app.post('/reset-password', async (req, res) => {
+router.post('/reset-password', async (req, res) => {
   const { email, newPassword } = req.body;
 
   const updatePassword = await service.updatePassword(email, newPassword);
