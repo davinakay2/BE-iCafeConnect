@@ -53,6 +53,33 @@ module.exports.getSearchediCafes = async (iCafeName) => {
     );
     return [icafes];
   };
+
+  module.exports.getiCafeUserData = async (userId, iCafeId) => {
+    try {
+      const [username] = await db.query(
+        "SELECT username FROM icafe_users WHERE userid = ?;",
+        [userId]
+      );
+  
+      const [userBilling] = await db2.query(
+        "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE account_id = ?;",
+        [userId] // Assuming account_id is the same as userId
+      );
+
+      const [pcCategories] = await db.query(
+        "SELECT pc_category FROM icafe_details WHERE icafe_id = ?;",
+        [iCafeId]
+      );
+  
+      return {
+        username: username.length ? username[0].username : null,
+        billing: userBilling.length ? userBilling[0] : null,
+        pcCategories: pcCategories.map(category => category.pc_category)
+      };
+    } catch (error) {
+      throw new Error(`Error fetching user data: ${error.message}`);
+    }
+  };
   
   module.exports.getUserBilling = async (accountId) => {
     const [billing] = await db2.query(
@@ -68,6 +95,18 @@ module.exports.getSearchediCafes = async (iCafeName) => {
     [userId]
   );
   return result;
+};
+
+module.exports.getPCCategories = async (iCafeId) => {
+  try {
+    const [categories] = await db.query(
+      "SELECT pc_category FROM icafe_details WHERE icafe_id = ?;",
+      [iCafeId]
+    );
+    return categories.map(category => category.pc_category);
+  } catch (error) {
+    throw new Error(`Error fetching PC categories: ${error.message}`);
+  }
 };
 
   module.exports.getiCafeDetails = async (detailsId) => {

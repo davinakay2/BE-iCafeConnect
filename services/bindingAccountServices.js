@@ -8,11 +8,23 @@ module.exports.getExternalAccount = async () => {
   };
 
 module.exports.validateAccount = async (userBody, passwordBody) => {
-    const [validateAccount] = await db2.query(
+    const [user] = await db2.query(
       "SELECT username, regular_billing, vip_billing, vvip_billing FROM accounts WHERE username = ? AND password = ?", 
       [userBody, passwordBody]
     );
-    return validateAccount;
+    console.log("User from DB:", user);
+
+  if (user && (await bcrypt.compare(passwordBody, user[0].password))) {
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: "1y" }
+    );
+    return { user, token };
+  } else {
+    return null;
+  }
   };
 
 module.exports.insertAccount = async (userBody, passwordBody) => {

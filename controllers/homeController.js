@@ -61,6 +61,27 @@ router.get('/getSearchediCafes', async (req, res) => {
   }
 });
 
+router.get('/getiCafeUserData', async (req, res) => {
+  const { userId, iCafeId } = req.query; 
+
+  if (!userId || !iCafeId) {
+    return res.status(400).json({ success: false, message: 'Missing userId or iCafeId parameter' });
+  }
+
+  try {
+    const userData = await service.getiCafeUserData(userId, iCafeId);
+
+    if (userData.username || userData.billing || userData.pcCategories.length) {
+      res.status(200).json({ success: true, data: userData });
+    } else {
+      res.status(404).json({ success: false, message: 'No data found' });
+    }
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).json({ success: false, message: 'An error occurred while fetching user data' });
+  }
+});
+
 router.get("/getUserBilling", async (req, res) => {
   try {
       const [userBilling] = await service.getUserBilling();
@@ -91,6 +112,26 @@ router.get("/getUsername", async (req, res) => {
   }
 });
 
+router.get('/getPCCategories', async (req, res) => {
+  const { iCafeId } = req.query; 
+
+  if (!iCafeId) {
+    return res.status(400).json({ success: false, message: 'Missing iCafeId parameter' });
+  }
+
+  try {
+    const categories = await service.getPCCategories(iCafeId);
+
+    if (categories.length) {
+      res.status(200).json({ success: true, categories });
+    } else {
+      res.status(404).json({ success: false, message: 'No categories found' });
+    }
+  } catch (error) {
+    console.error('Error fetching PC categories:', error);
+    res.status(500).json({ success: false, message: 'An error occurred while fetching PC categories' });
+  }
+});
 
 router.get("/getiCafeDetails", async (req, res) => {
   try {

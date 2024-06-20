@@ -1,54 +1,45 @@
-const express = require("express"),
-router = express.Router();
+const express = require('express');
+const router = express.Router();
+const { v4: uuidv4 } = require('uuid');
+const {db,db2} = require("../db");
 
-const bodyParser = require('body-parser');
-const service = require("../services/paymentServices");
-const app = express();
+const { createMidtransTransaction } = require('../services/paymentServices');
 
-app.use(bodyParser.json());
-
-app.post('/create-payment', async (req, res) => {
-  const { orderId, grossAmount, customerDetails } = req.body;
-
-  const transactionData = {
-    transaction_details: {
-      order_id: orderId,
-      gross_amount: grossAmount,
-    },
-    customer_details: customerDetails,
-    item_details: [
-      {
-        id: 'item01',
-        price: grossAmount,
-        quantity: 1,
-        name: 'Item Name',
-      },
-    ],
-  };
-
-  try {
-    const response = await service.post('/charge', transactionData);
-    res.status(200).json(response.data);
-  } catch (error) {
-    console.error(error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Payment creation failed' });
-  }
-});
-
-app.post('/payment-notification', async (req, res) => {
-    const notification = req.body;
+// Route handling function
+router.post('/topup', async (req, res) => {
+    const { billing_price_id, payment_method, user_id } = req.body;
   
-    // You can validate the notification here (e.g., by checking the signature)
-    console.log('Payment notification received:', notification);
+    try {
+      // Check if user_id is provided
+      if (user_id === undefined) {
+        return res.status(400).json({ error: 'userid is required' });
+      }
   
-    // Process the notification (update order status, etc.)
-    // Example: Update order status based on notification.transaction_status
+      // Fetch billing price details from your database using connection pool
+      const [results] = await db.execute('SELECT price FROM billing_price WHERE billing_price_id = ?', [billing_price_id]);
   
-    res.status(200).send('OK');
+      if (results.length === 0) {
+        return res.status(404).json({ error: 'Billing option not found' });
+      }
+  
+      const { price } = results[0];
+      const orderId = uuidv4(); // Generate a unique order ID
+  
+      // Create transaction in Midtrans
+      const paymentResponse = await createMidtransTransaction(orderId, price, payment_method);
+  
+      if (paymentResponse.status_code !== '201') {
+        return res.status(500).json({ error: 'Payment processing failed' });
+      }
+  
+      // Insert transaction history into your database using connection pool
+      const [insertResult] = await db.execute('INSERT INTO icafe_transactions (billing_price_id, userid, time, date) VALUES (?, ?, NOW(), NOW())', [billing_price_id, user_id]);
+  
+      res.json({ message: 'Payment successful', paymentResponse });
+    } catch (error) {
+      console.error('Error in topupBilling:', error.message);
+      res.status(500).json({ error: 'Transaction failed' });
+    }
   });
-
-module.exports = router;
-
-// app.listen(port, () => {
-//   console.log(`Server is running on http://localhost:${port}`);
-// });
+  
+  module.exports = router;
