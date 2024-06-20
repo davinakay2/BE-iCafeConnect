@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
-const { db } = require("../db");
+const {db,db2} = require("../db");
+
 const { createMidtransTransaction } = require('../services/paymentServices');
 
 // Route handling function
@@ -32,26 +33,13 @@ router.post('/topup', async (req, res) => {
       }
   
       // Insert transaction history into your database using connection pool
-      const [insertResult] = await db.execute('INSERT INTO icafe_transactions (billing_price_id, userid, time, date) VALUES (?, ?, NOW(), NOW())', [billing_price_id, user_id]);
-  
-      // Fetch current ewallet_balance
-      const [userBalanceResult] = await db.execute('SELECT ewallet_balance FROM icafe_users WHERE userid = ?', [user_id]);
-      
-      if (userBalanceResult.length === 0) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      
-      const currentBalance = userBalanceResult[0].ewallet_balance;
-      const newBalance = currentBalance + price; // Assuming adding the entire transaction amount
-  
-      // Update ewallet_balance in icafe_users table
-      await db.execute('UPDATE icafe_users SET ewallet_balance = ? WHERE userid = ?', [newBalance, user_id]);
+      const [insertResult] = await db.execute('INSERT INTO icafe_transactions (billing_price_id, user_id, time, date) VALUES (?, ?, NOW(), NOW())', [billing_price_id, user_id]);
   
       res.json({ message: 'Payment successful', paymentResponse });
     } catch (error) {
       console.error('Error in topupBilling:', error.message);
       res.status(500).json({ error: 'Transaction failed' });
     }
-});
-
-module.exports = router;
+  });
+  
+  module.exports = router;
