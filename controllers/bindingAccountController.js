@@ -9,40 +9,47 @@ router.get("/getExternalAccount", async (req, res) => {
   res.json(getExternalAccount)
 });
 
-router.get("/validateAccount", async (req, res) => {
-  const userBody = req.body.user;
-  const passwordBody = req.body.password;
-  const validateAccount = await service.validateAccount(userBody, passwordBody);
-  if (validateAccount.length == 0) {
-    res.status(404).json("Username Or Password is Wrong!");
+router.post("/validateAccount", async (req, res) => {
+  const { user_id, icafe_id, username: userBody, password: passwordBody } = req.body;
+
+  try {
+    const validateAccount = await service.validateAccount(user_id, icafe_id, userBody, passwordBody);
+
+    if (!validateAccount) {
+      res.status(404).json("Username Or Password is Wrong!");
+    } else {
+      res.json(validateAccount);
+    }
+  } catch (error) {
+    console.error("Error validating account:", error);
+    res.status(500).json("Internal Server Error");
   }
-  res.json(validateAccount)
 });
 
 router.post("/insertAccount", async (req, res) => {
   const {
+    icafe_id: icafeIdBody,
     username: usernameBody,
     password: passwordBody,
   } = req.body;
 
   const iccUsername = `icc${usernameBody}`;
 
-  const affectedRows = await service.insertAccount(
-    iccUsername,
-    passwordBody,
-  );
-  if (affectedRows != 0) {
-    res.status(201).send("Account Created Successfully!");
-  } else {
-    res.status(404).send("Unsuccessfull Account Creation");
+  try {
+    const affectedRows = await service.insertAccount(
+      icafeIdBody,
+      iccUsername,
+      passwordBody,
+    );
+    if (affectedRows != 0) {
+      res.status(201).send("Account Created Successfully!");
+    } else {
+      res.status(404).send("Unsuccessful Account Creation");
+    }
+  } catch (error) {
+    console.error("Error creating account:", error);
+    res.status(500).send("Internal Server Error");
   }
-});
-
-router.put("/unbindAccount", async (req, res) => {
-  const userBody = req.body.user;
-  const unbindAccount = await service.unbindAccount(userBody);
-
-  res.status(404).json("Unbinded Successfully!");
 });
 
 

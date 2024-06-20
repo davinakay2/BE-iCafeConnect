@@ -27,4 +27,4 @@ const db3 = mysql.createPool({
   database: "orion",
 });
 
-  module.exports = {db, db2}
+  module.exports = {db, db1, db2, db3};
