@@ -95,8 +95,9 @@ module.exports.getSearchediCafes = async (iCafeName) => {
     }
   };
   
-  module.exports.getUserBilling = async (accountId) => {
-    const [billing] = await db2.query(
+  module.exports.getUserBilling = async (accountId, icafe_id) => {
+    const selectedDb = getDatabaseById(icafe_id);
+    const [billing] = await selectedDb.query(
       "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE account_id = ?;",
       [accountId]
     );

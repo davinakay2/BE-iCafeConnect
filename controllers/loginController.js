@@ -1,16 +1,24 @@
 const express = require("express"),
 router = express.Router();
 const service = require("../services/loginServices");
-
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465, // Gmail SMTP port (465 or 587)
+  secure: true, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER, // Your email
-    pass: process.env.EMAIL_PASS, // Your email password
-  },
+      user: 'icafeconnectapp@gmail.com', // Your email address
+      pass: 't3stp4ssword123' // Your app password for Gmail
+  }
 });
+transporter.on('log', console.log);
+
+// Function to generate OTP
+const generateOtp = () => {
+  // Generate a 6-digit random OTP
+  return Math.floor(100000 + Math.random() * 900000);
+};
 
 const bodyParser = require('body-parser');
 const app = express();
