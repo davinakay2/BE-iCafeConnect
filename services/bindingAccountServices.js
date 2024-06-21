@@ -3,6 +3,19 @@ const jwt = require('jsonwebtoken');
 const { db, db1, db2, db3 } = require("../db");
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const getDatabaseById = (icafe_id) => {
+  switch (icafe_id) {
+    case 1:
+      return db1;
+    case 2:
+      return db2;
+    case 3:
+      return db3;
+    default:
+      return db;
+  }
+};
+
 module.exports.getExternalAccount = async (icafe_id) => {
   const selectedDb = getDatabaseById(icafe_id);
   const [externalAccounts] = await selectedDb.query(
@@ -12,18 +25,6 @@ module.exports.getExternalAccount = async (icafe_id) => {
 };
 
 module.exports.validateAccount = async (user_id, icafe_id, userBody, passwordBody) => {
-  const getDatabaseById = (icafe_id) => {
-    switch (icafe_id) {
-      case 1:
-        return db1;
-      case 2:
-        return db2;
-      case 3:
-        return db3;
-      default:
-        return db;
-    }
-  };
 
   const selectedDb = getDatabaseById(icafe_id);
 
