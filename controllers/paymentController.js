@@ -189,4 +189,142 @@ try {
 }
 });
 
+router.post('/topupBillingWithEwallet', async (req, res) => {
+    const { billing_price_id, user_id } = req.body;
+
+    try {
+        // Check if user_id is provided
+        if (user_id === undefined) {
+            return res.status(400).json({ error: 'user_id is required' });
+        }
+
+        // Fetch billing price details and icafe_detail_id from your database
+        const [billingResults] = await db.execute(
+            'SELECT price, icafe_detail_id, hours FROM billing_price WHERE billing_price_id = ?',
+            [billing_price_id]
+        );
+
+        if (billingResults.length === 0) {
+            return res.status(404).json({ error: 'Billing option not found' });
+        }
+
+        const { price, icafe_detail_id, hours } = billingResults[0];
+
+        // Fetch icafe_id and pc_category using icafe_detail_id
+        const [icafeResults] = await db.execute(
+            'SELECT icafe_id, pc_category FROM icafe_details WHERE icafe_detail_id = ?',
+            [icafe_detail_id]
+        );
+
+        if (icafeResults.length === 0) {
+            return res.status(404).json({ error: 'iCafe details not found' });
+        }
+
+        const { icafe_id, pc_category } = icafeResults[0];
+
+        // Fetch username_binding from the binding_account table
+        const [bindingResults] = await db.execute(
+            'SELECT username_binding FROM binding_account WHERE userid = ?',
+            [user_id]
+        );
+
+        if (bindingResults.length === 0) {
+            return res.status(404).json({ error: 'Binding account not found' });
+        }
+
+        const { username_binding } = bindingResults[0];
+
+        // Determine the appropriate database based on icafe_id
+        const dbToUse = (icafe_id) => {
+            switch (icafe_id) {
+                case 1:
+                    return db1;
+                case 2:
+                    return db2;
+                case 3:
+                    return db3;
+                default:
+                    return db;
+            }
+        };
+
+        // Fetch username from the accounts table using username_binding
+        const [accountResults] = await dbToUse(icafe_id).execute(
+            'SELECT account_id FROM accounts WHERE username = ?',
+            [username_binding]
+        );
+
+        if (accountResults.length === 0) {
+            return res.status(404).json({ error: 'Account not found' });
+        }
+
+        const { account_id } = accountResults[0];
+
+        // Fetch the user's e-wallet balance
+        const [userResults] = await db.execute(
+            'SELECT ewallet_balance FROM icafe_users WHERE userid = ?',
+            [user_id]
+        );
+
+        if (userResults.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const { ewallet_balance } = userResults[0];
+
+        // Check if the user has sufficient balance
+        if (ewallet_balance < price) {
+            return res.status(400).json({ error: 'Insufficient e-wallet balance' });
+        }
+
+        // Deduct the price from the user's e-wallet balance
+        await db.execute(
+            'UPDATE icafe_users SET ewallet_balance = ewallet_balance - ? WHERE userid = ?',
+            [price, user_id]
+        );
+
+        // Insert transaction into icafe_transactions
+        await db.execute(
+            'INSERT INTO icafe_transactions (billing_price_id, userid, payment_method, time, date) VALUES (?, ?, ?, NOW(), NOW())',
+            [billing_price_id, user_id, 'e-wallet']
+        );
+
+        // Fetch the inserted icafe_transaction_id
+        const [transactionResult] = await db.execute(
+            'SELECT LAST_INSERT_ID() as icafe_transaction_id'
+        );
+
+        const { icafe_transaction_id } = transactionResult[0];
+
+        // Determine the billing column to update based on pc_category
+        let billingColumn;
+        switch (pc_category) {
+            case 'Regular':
+                billingColumn = 'regular_billing';
+                break;
+            case 'VIP':
+                billingColumn = 'vip_billing';
+                break;
+            case 'VVIP':
+                billingColumn = 'vvip_billing';
+                break;
+            default:
+                return res.status(400).json({ error: 'Invalid PC category' });
+        }
+
+        // Update the appropriate billing column in the accounts table by adding hours
+        await dbToUse(icafe_id).execute(
+            `UPDATE accounts SET ${billingColumn} = ADDTIME(${billingColumn}, SEC_TO_TIME(? * 3600)) WHERE account_id = ?`,
+            [hours, account_id]
+        );
+
+        await insertICafeBillingHistory(icafe_transaction_id, user_id, billing_price_id);
+
+        res.json({ message: 'Payment successful' });
+    } catch (error) {
+        console.error('Error in topupBilling:', error.message);
+        res.status(500).json({ error: 'Transaction failed' });
+    }
+});
+
 module.exports = router;

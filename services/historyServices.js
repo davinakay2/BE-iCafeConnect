@@ -70,9 +70,9 @@ const insertEwalletTopupHistory = async (transactionId, userId) => {
     }
 };
 
-module.exports = { insertICafeBillingHistory };
-
-module.exports = { insertEwalletTopupHistory };
-
+module.exports = {
+    insertICafeBillingHistory,
+    insertEwalletTopupHistory
+};
 
 

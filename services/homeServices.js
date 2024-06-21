@@ -96,13 +96,27 @@ module.exports.getSearchediCafes = async (iCafeName) => {
   };
   
   module.exports.getUserBilling = async (username, icafe_id) => {
-    const selectedDb = getDatabaseById(icafe_id);
-    const [billing] = await selectedDb.query(
-      "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE username = ?;",
-      [username]
-    );
-    return [billing];
+  const getDatabaseById = (icafe_id) => {
+    switch(icafe_id) {
+      case 1:
+        return db1;
+      case 2:
+        return db2;
+      case 3:
+        return db3;
+      default:
+        return db;
+    }
   };
+  
+  const selectedDb = getDatabaseById(icafe_id);
+  const [billing] = await selectedDb.query(
+    "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE username = ?;",
+    [username]
+  );
+  
+  return [billing];
+};
   
   module.exports.getUsername = async (userId, icafe_id) => {
     const selectedDb = getDatabaseById(icafe_id);

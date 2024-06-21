@@ -84,13 +84,19 @@ router.get('/getiCafeUserData', async (req, res) => {
 
 router.get("/getUserBilling", async (req, res) => {
   try {
-      const [userBilling] = await service.getUserBilling();
-      res.json(userBilling);
-    } catch (error) {
-      console.error("Error fetching user billing:", error);
-      res.status(500).send("An error occurred while fetching user billing.");
+    const username = req.query.username;
+    const icafe_id = parseInt(req.query.icafe_id, 10); // Ensure icafe_id is a number
+
+    if (!username || isNaN(icafe_id)) {
+      return res.status(400).send("Missing or invalid query parameters");
     }
 
+    const [userBilling] = await service.getUserBilling(username, icafe_id);
+    res.json(userBilling);
+  } catch (error) {
+    console.error("Error fetching user billing:", error);
+    res.status(500).send("An error occurred while fetching user billing.");
+  }
 });
 
 router.get("/getUsername", async (req, res) => {
