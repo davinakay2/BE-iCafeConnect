@@ -4,7 +4,7 @@ const express = require('express'),
 require('express-async-errors')
 require('dotenv').config();
 
-const {db, db2} = require('./db'), 
+const {db, db1, db2, db3} = require('./db'), 
     loginRoutes = require('./controllers/loginController')
     homeRoutes = require('./controllers/homeController')
     bindingAccountRoutes = require('./controllers/bindingAccountController')
@@ -35,7 +35,9 @@ app.use((err, req, res, next) => {
 
 Promise.all([
     db.query("SELECT 1"),
-    db2.query("SELECT 1")
+    db1.query("SELECT 1"),
+    db2.query("SELECT 1"),
+    db3.query("SELECT 1")
 ])
 .then(() => { 
     console.log("All database connections succeeded.");

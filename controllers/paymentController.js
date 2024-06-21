@@ -4,6 +4,8 @@ const { v4: uuidv4 } = require('uuid');
 const {db, db1, db2, db3} = require("../db");
 
 const { createMidtransTransaction } = require('../services/paymentServices');
+const { insertICafeBillingHistory } = require('../services/historyServices');
+const { insertEwalletTopupHistory } = require('../services/historyServices');
 
 // Route handling function
 router.post('/topupBilling', async (req, res) => {
@@ -104,15 +106,24 @@ try {
 
     // Insert transaction history into your database
     await db.execute(
-        'INSERT INTO icafe_transactions (billing_price_id, userid, time, date) VALUES (?, ?, NOW(), NOW())',
-        [billing_price_id, user_id]
+        'INSERT INTO icafe_transactions (billing_price_id, userid, payment_method, time, date) VALUES (?, ?, ?, NOW(), NOW())',
+        [billing_price_id, user_id, payment_method]
     );
+
+    // Fetch the inserted icafe_transaction_id
+    const [transactionResult] = await db.execute(
+        'SELECT LAST_INSERT_ID() as icafe_transaction_id'
+    );
+
+    const { icafe_transaction_id } = transactionResult[0];
 
     // Update the appropriate billing column in the accounts table by adding hours
     await dbToUse(icafe_id).execute(
         `UPDATE accounts SET ${billingColumn} = ADDTIME(${billingColumn}, SEC_TO_TIME(? * 3600)) WHERE account_id = ?`,
         [hours, account_id]
     );
+
+    await insertICafeBillingHistory(icafe_transaction_id, user_id, billing_price_id);
 
     res.json({ message: 'Payment successful', paymentResponse });
 } catch (error) {
@@ -141,11 +152,20 @@ try {
   }
 
   // Insert topup record into ewallet_transactions table
-  const [insertEWalletResult] = await db.execute('INSERT INTO ewallet_transactions (userid, topup_amount, time, date) VALUES (?, ?, NOW(), NOW())', [user_id, topup_amount]);
+  const [insertEWalletResult] = await db.execute(
+    'INSERT INTO ewallet_transactions (userid, topup_amount, payment_method, time, date) VALUES (?, ?, ?, NOW(), NOW())',
+    [user_id, topup_amount, payment_method]
+);
   
   if (insertEWalletResult.affectedRows !== 1) {
     throw new Error('Failed to insert topup record into ewallet_transactions');
   }
+
+  const [transactionResult] = await db.execute(
+    'SELECT LAST_INSERT_ID() as ewallet_transaction_id'
+);
+
+    const { ewallet_transaction_id } = transactionResult[0];
 
   // Fetch current ewallet_balance
   const [userBalanceResult] = await db.execute('SELECT ewallet_balance FROM icafe_users WHERE userid = ?', [user_id]);
@@ -159,6 +179,8 @@ try {
 
   // Update ewallet_balance in icafe_users table
   await db.execute('UPDATE icafe_users SET ewallet_balance = ? WHERE userid = ?', [newBalance, user_id]);
+
+  await insertEwalletTopupHistory(ewallet_transaction_id, user_id);
 
   res.json({ message: 'eWallet top-up successful' });
 } catch (error) {
