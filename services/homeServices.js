@@ -106,7 +106,7 @@ module.exports.getSearchediCafes = async (iCafeName) => {
   module.exports.getUsername = async (userId, icafe_id) => {
     const selectedDb = getDatabaseById(icafe_id);
     const [result] = await selectedDb.query(
-      "SELECT username FROM icafe_users WHERE userid = ?;",
+      "SELECT username, ewallet_balance FROM icafe_users WHERE userid = ?;",
       [userId]
     );
     return result;
