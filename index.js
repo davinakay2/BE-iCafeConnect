@@ -4,12 +4,15 @@ const express = require('express'),
 require('express-async-errors')
 require('dotenv').config();
 
+app.use(express.json());
+
 const {db, db1, db2, db3} = require('./db'), 
     loginRoutes = require('./controllers/loginController')
     homeRoutes = require('./controllers/homeController')
     bindingAccountRoutes = require('./controllers/bindingAccountController')
     paymentRoutes = require('./controllers/paymentController')
     settingsRoutes = require('./controllers/settingsController')
+    icafepageRoutes = require('./controllers/icafepageController')
 
 //middleware
 app.use(bodyparser.json())
@@ -18,6 +21,7 @@ app.use('/homepage', homeRoutes)
 app.use('/bindingaccountpage', bindingAccountRoutes)
 app.use('/paymentpage', paymentRoutes)
 app.use('/settingspage', settingsRoutes)
+app.use('/icafepage', icafepageRoutes)
 app.use((err, req, res, next) => {
     console.log(err)
     res.status(err.status || 500).send('Something went wrong!')

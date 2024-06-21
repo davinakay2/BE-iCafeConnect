@@ -96,18 +96,6 @@ module.exports.getSearchediCafes = async (iCafeName) => {
   };
   
   module.exports.getUserBilling = async (username, icafe_id) => {
-  const getDatabaseById = (icafe_id) => {
-    switch(icafe_id) {
-      case 1:
-        return db1;
-      case 2:
-        return db2;
-      case 3:
-        return db3;
-      default:
-        return db;
-    }
-  };
   
   const selectedDb = getDatabaseById(icafe_id);
   const [billing] = await selectedDb.query(
