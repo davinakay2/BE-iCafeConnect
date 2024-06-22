@@ -1,179 +1,122 @@
-const express = require("express"),
-router = express.Router();
-const service = require("../services/homeServices");
+const express = require('express');
+const router = express.Router();
+const services = require("../services/homeServices"); // Adjust the path as necessary
 
-router.get('/getPromoBanner', async (req, res) => {
+// Route to fetch promo banner URL
+router.get('/promobanner', async (req, res) => {
   try {
-    const bannerUrl = await service.getPromoBanner();
-    if (bannerUrl) {
-      res.status(200).json({ success: true, bannerUrl });
-    } else {
-      res.status(404).json({ success: false, message: 'Promo banner not found' });
-    }
+    const bannerUrl = await services.getPromoBanner();
+    res.json({ bannerUrl });
   } catch (error) {
     console.error('Error fetching promo banner:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while fetching promo banner' });
+    res.status(500).send('An error occurred while fetching promo banner.');
   }
 });
 
-router.get("/getFeaturediCafes", async (req, res) => {
-    try {
-        const [featurediCafes] = await service.getFeaturediCafes();
-        res.json(featurediCafes);
-      } catch (error) {
-        console.error("Error fetching featured iCafes:", error);
-        res.status(500).send("An error occurred while fetching featured iCafes.");
-      }
-
-});
-
-router.get("/getPriceLabel", async (req,res) => {
-  const [priceLabeliCafes] = await service.getPriceLabel();
-  console.log(priceLabeliCafes);
-  res.json(priceLabeliCafes);
-})
-
-router.get("/getAlliCafes", async (req, res) => {
+// Route to fetch featured iCafes
+router.get('/getFeaturediCafes', async (req, res) => {
   try {
-      const [alliCafes] = await service.getAlliCafes();
-      res.json(alliCafes);
-    } catch (error) {
-      console.error("Error fetching all iCafes:", error);
-      res.status(500).send("An error occurred while fetching all iCafes.");
-    }
-
+    const featurediCafes = await services.getFeaturediCafes();
+    res.json(featurediCafes);
+  } catch (error) {
+    console.error('Error fetching featured iCafes:', error);
+    res.status(500).send('An error occurred while fetching featured iCafes.');
+  }
 });
 
+// Route to fetch all iCafes
+router.get('/getAlliCafes', async (req, res) => {
+  try {
+    const alliCafes = await services.getAlliCafes();
+    res.json(alliCafes);
+  } catch (error) {
+    console.error('Error fetching all iCafes:', error);
+    res.status(500).send('An error occurred while fetching all iCafes.');
+  }
+});
+
+// Route to search for iCafes by name
 router.get('/getSearchediCafes', async (req, res) => {
-  const { iCafeName } = req.query; 
-
+  const { name } = req.params;
   try {
-    const icafes = await service.getSearchediCafes(iCafeName);
-
-    if (icafes.length > 0) {
-      res.status(200).json({ success: true, icafes });
-    } else {
-      res.status(404).json({ success: false, message: 'No iCafes found with the given name' });
-    }
+    const searchediCafes = await services.getSearchediCafes(name);
+    res.json(searchediCafes);
   } catch (error) {
-    console.error('Error fetching iCafes:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while fetching iCafes' });
+    console.error(`Error searching iCafes by name "${name}":`, error);
+    res.status(500).send(`An error occurred while searching iCafes by name "${name}".`);
   }
 });
 
-router.get('/getiCafeUserData', async (req, res) => {
-  const { userId, iCafeId } = req.query; 
-
-  if (!userId || !iCafeId) {
-    return res.status(400).json({ success: false, message: 'Missing userId or iCafeId parameter' });
-  }
-
+// Route to fetch user billing info for a specific iCafe
+router.get('/getUserBilling', async (req, res) => {
+  const { username, icafe_id } = req.params;
   try {
-    const userData = await service.getiCafeUserData(userId, iCafeId);
-
-    if (userData.username || userData.billing || userData.pcCategories.length) {
-      res.status(200).json({ success: true, data: userData });
-    } else {
-      res.status(404).json({ success: false, message: 'No data found' });
-    }
-  } catch (error) {
-    console.error('Error fetching user data:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while fetching user data' });
-  }
-});
-
-router.get("/getUserBilling", async (req, res) => {
-  try {
-    const username = req.query.username;
-    const icafe_id = parseInt(req.query.icafe_id, 10); // Ensure icafe_id is a number
-
-    if (!username || isNaN(icafe_id)) {
-      return res.status(400).send("Missing or invalid query parameters");
-    }
-
-    const [userBilling] = await service.getUserBilling(username, icafe_id);
+    const userBilling = await services.getUserBilling(username, icafe_id);
     res.json(userBilling);
   } catch (error) {
-    console.error("Error fetching user billing:", error);
-    res.status(500).send("An error occurred while fetching user billing.");
+    console.error(`Error fetching user billing info for username "${username}" and iCafe ${icafe_id}:`, error);
+    res.status(500).send(`An error occurred while fetching user billing info for username "${username}" and iCafe ${icafe_id}.`);
   }
 });
 
-router.get("/getUsername", async (req, res) => {
+// Route to fetch username and eWallet balance for a specific user
+router.get('/getUsername', async (req, res) => {
+  const { userId, icafe_id } = req.params;
   try {
-    const userId = req.query.userid;
-    if (!userId) {
-      return res.status(400).json({ error: "Missing userid parameter" });
-    }
-
-    const [username] = await service.getUsername(userId);
-    if (username) {
-      res.json(username);
-    } else {
-      res.status(404).json({ error: "User not found" });
-    }
+    const userInfo = await services.getUsername(userId, icafe_id);
+    res.json(userInfo);
   } catch (error) {
-    console.error("Error fetching username:", error);
-    res.status(500).send("An error occurred while fetching username.");
+    console.error(`Error fetching username and eWallet balance for userId ${userId} and iCafe ${icafe_id}:`, error);
+    res.status(500).send(`An error occurred while fetching username and eWallet balance for userId ${userId} and iCafe ${icafe_id}.`);
   }
 });
 
+// Route to fetch PC categories for a specific iCafe
 router.get('/getPCCategories', async (req, res) => {
-  const { iCafeId } = req.query; 
-
-  if (!iCafeId) {
-    return res.status(400).json({ success: false, message: 'Missing iCafeId parameter' });
-  }
-
+  const { icafe_id } = req.params;
   try {
-    const categories = await service.getPCCategories(iCafeId);
-
-    if (categories.length) {
-      res.status(200).json({ success: true, categories });
-    } else {
-      res.status(404).json({ success: false, message: 'No categories found' });
-    }
+    const pcCategories = await services.getPCCategories(icafe_id);
+    res.json(pcCategories);
   } catch (error) {
-    console.error('Error fetching PC categories:', error);
-    res.status(500).json({ success: false, message: 'An error occurred while fetching PC categories' });
+    console.error(`Error fetching PC categories for iCafe ${icafe_id}:`, error);
+    res.status(500).send(`An error occurred while fetching PC categories for iCafe ${icafe_id}.`);
   }
 });
 
-router.get("/getiCafeDetails", async (req, res) => {
+// Route to fetch details of a specific iCafe
+router.get('/getiCafeDetails', async (req, res) => {
+  const { detailsId, icafe_id } = req.params;
   try {
-      const [details] = await service.getiCafeDetails();
-      res.json(details);
-    } catch (error) {
-      console.error("Error fetching iCafe details:", error);
-      res.status(500).send("An error occurred while fetching iCafe details.");
-    }
-
+    const iCafeDetails = await services.getiCafeDetails(detailsId, icafe_id);
+    res.json(iCafeDetails);
+  } catch (error) {
+    console.error(`Error fetching details for iCafe with detailsId ${detailsId} and iCafe ${icafe_id}:`, error);
+    res.status(500).send(`An error occurred while fetching details for iCafe with detailsId ${detailsId} and iCafe ${icafe_id}.`);
+  }
 });
 
-router.get("/getComputerSpecs", async (req, res) => {
+// Route to fetch computer specifications for a specific iCafe detail
+router.get('/getComputerSpecs', async (req, res) => {
+  const { detailsId, icafe_id } = req.params;
   try {
-      const [specs] = await service.getComputerSpecs();
-      res.json(specs);
-    } catch (error) {
-      console.error("Error fetching computer specifications:", error);
-      res.status(500).send("An error occurred while fetching computer specifications.");
-    }
-
+    const computerSpecs = await services.getComputerSpecs(detailsId, icafe_id);
+    res.json(computerSpecs);
+  } catch (error) {
+    console.error(`Error fetching computer specifications for iCafe detail ${detailsId} and iCafe ${icafe_id}:`, error);
+    res.status(500).send(`An error occurred while fetching computer specifications for iCafe detail ${detailsId} and iCafe ${icafe_id}.`);
+  }
 });
 
-router.get("/geteWalletBalance", async (req, res) => {
+// Route to fetch eWallet balance for a specific user
+router.get('/geteWalletBalance', async (req, res) => {
+  const { userId } = req.params;
   try {
-      const [balance] = await service.geteWalletBalance();
-      res.json(balance);
-    } catch (error) {
-      console.error("Error fetching e-Wallet balance:", error);
-      res.status(500).send("An error occurred while fetching e-Wallet Balance.");
-    }
-
+    const eWalletBalance = await services.geteWalletBalance(userId);
+    res.json(eWalletBalance);
+  } catch (error) {
+    console.error(`Error fetching eWallet balance for userId ${userId}:`, error);
+    res.status(500).send(`An error occurred while fetching eWallet balance for userId ${userId}.`);
+  }
 });
-
-// app.listen(port, () => {
-//   console.log(`Server is running on http://localhost:${port}`);
-// });
 
 module.exports = router;

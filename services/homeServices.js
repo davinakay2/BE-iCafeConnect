@@ -66,34 +66,6 @@ module.exports.getSearchediCafes = async (iCafeName) => {
     );
     return [icafes];
   };
-
-  module.exports.getiCafeUserData = async (userId, icafe_id) => {
-    try {
-      const selectedDb = getDatabaseById(icafe_id);
-      const [username] = await selectedDb.query(
-        "SELECT username FROM icafe_users WHERE userid = ?;",
-        [userId]
-      );
-  
-      const [userBilling] = await db2.query(
-        "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE account_id = ?;",
-        [userId] // Assuming account_id is the same as userId
-      );
-  
-      const [pcCategories] = await selectedDb.query(
-        "SELECT pc_category FROM icafe_details WHERE icafe_id = ?;",
-        [icafe_id]
-      );
-  
-      return {
-        username: username.length ? username[0].username : null,
-        billing: userBilling.length ? userBilling[0] : null,
-        pcCategories: pcCategories.map(category => category.pc_category)
-      };
-    } catch (error) {
-      throw new Error(`Error fetching user data: ${error.message}`);
-    }
-  };
   
   module.exports.getUserBilling = async (username, icafe_id) => {
   

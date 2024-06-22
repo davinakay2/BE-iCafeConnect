@@ -1,42 +1,33 @@
-const express = require('express'),
-    app = express(),
-    bodyparser = require('body-parser')
-require('express-async-errors')
+const express = require('express');
+const app = express();
+const bodyparser = require('body-parser');
+require('express-async-errors');
 require('dotenv').config();
 
+const { db, db1, db2, db3 } = require('./db'); 
+const loginRoutes = require('./controllers/loginController');
+const homeRoutes = require('./controllers/homeController');
+const bindingAccountRoutes = require('./controllers/bindingAccountController');
+const paymentRoutes = require('./controllers/paymentController');
+const settingsRoutes = require('./controllers/settingsController');
+const icafepageRoutes = require('./controllers/icafepageController');
+
 app.use(express.json());
+app.use(bodyparser.json());
 
-const {db, db1, db2, db3} = require('./db'), 
-    loginRoutes = require('./controllers/loginController')
-    homeRoutes = require('./controllers/homeController')
-    bindingAccountRoutes = require('./controllers/bindingAccountController')
-    paymentRoutes = require('./controllers/paymentController')
-    settingsRoutes = require('./controllers/settingsController')
-    icafepageRoutes = require('./controllers/icafepageController')
+app.use('/loginpage', loginRoutes);
+app.use('/homepage', homeRoutes);
+app.use('/bindingaccountpage', bindingAccountRoutes);
+app.use('/paymentpage', paymentRoutes);
+app.use('/settingspage', settingsRoutes);
+app.use('/icafepage', icafepageRoutes);
 
-//middleware
-app.use(bodyparser.json())
-app.use('/loginpage', loginRoutes)
-app.use('/homepage', homeRoutes)
-app.use('/bindingaccountpage', bindingAccountRoutes)
-app.use('/paymentpage', paymentRoutes)
-app.use('/settingspage', settingsRoutes)
-app.use('/icafepage', icafepageRoutes)
 app.use((err, req, res, next) => {
-    console.log(err)
-    res.status(err.status || 500).send('Something went wrong!')
-})
+    console.error(err);
+    res.status(err.status || 500).send('Something went wrong!');
+});
 
-// to make sure the db connection is successful
-// db.query("SELECT 1")
-//     .then(() => { 
-//         console.log("db connection succeeded.")
-//         app.listen(3000, 
-//             () => console.log('server started at 3000')
-//         )
-//     })
-//     .catch(err => console.log("db connection failed. \n" + err));
-
+// Ensure the db connection is successful
 Promise.all([
     db.query("SELECT 1"),
     db1.query("SELECT 1"),

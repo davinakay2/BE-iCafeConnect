@@ -1,10 +1,11 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const services = require('../services/icafepageServices'); // Adjust the path as needed
+const services = require("../services/icafepageServices");
 
-router.post("/getPCCategories", async (req, res) => {
+// Route to fetch all PC categories for a given icafe_id
+router.get("/getPCCategories", async (req, res) => {
   try {
-    const { icafe_id } = req.body; // Change to req.body to get data from POST request body
+    const { icafe_id } = req.params; // Change to req.query to get data from GET request query parameters
     if (!icafe_id) {
       return res.status(400).send("Missing icafe_id parameter");
     }
@@ -17,9 +18,9 @@ router.post("/getPCCategories", async (req, res) => {
 });
 
 // Route to fetch PC billing info for a specific pc_category
-router.post("/getPCBillingInfo", async (req, res) => {
+router.get("/getPCBillingInfo", async (req, res) => {
   try {
-    const { icafe_id, pc_category } = req.body;
+    const { icafe_id, pc_category } = req.params;
     if (!icafe_id || !pc_category) {
       return res.status(400).send("Missing icafe_id or pc_category parameter");
     }
@@ -32,9 +33,9 @@ router.post("/getPCBillingInfo", async (req, res) => {
 });
 
 // Route to fetch computer specifications for a given icafe_detail_id
-router.post("/getComputerSpecifications", async (req, res) => {
+router.get("/getComputerSpecifications", async (req, res) => {
   try {
-    const { icafe_detail_id } = req.body;
+    const { icafe_detail_id } = req.params;
     if (!icafe_detail_id) {
       return res.status(400).send("Missing icafe_detail_id parameter");
     }
@@ -46,10 +47,10 @@ router.post("/getComputerSpecifications", async (req, res) => {
   }
 });
 
-// Route to fetch billing prices for a given icafe_detail_id using POST request
-router.post("/getBillingPrices", async (req, res) => {
+// Route to fetch billing prices for a given icafe_detail_id
+router.get("/getBillingPrices", async (req, res) => {
   try {
-    const { icafe_detail_id } = req.body;
+    const { icafe_detail_id } = req.params;
     if (!icafe_detail_id) {
       return res.status(400).send("Missing icafe_detail_id parameter");
     }

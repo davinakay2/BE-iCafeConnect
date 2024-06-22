@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   secure: true, // true for 465, false for other ports
   auth: {
       user: 'icafeconnectapp@gmail.com', // Your email address
-      pass: 't3stp4ssword123' // Your app password for Gmail
+      pass: 'fynu gzny phsg lptr' // Your app password for Gmail
   }
 });
 transporter.on('log', console.log);
@@ -72,7 +72,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.post('/request-otp', (req, res) => {
+router.get('/request-otp', (req, res) => {
   const { email } = req.body;
   const otp = generateOtp();
 
@@ -80,7 +80,10 @@ router.post('/request-otp', (req, res) => {
 
   // Send OTP email
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: {
+      name: "ICafe Connect",
+      address: process.env.EMAIL_USER
+    },
     to: email,
     subject: 'Your OTP Code',
     text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
@@ -95,7 +98,7 @@ router.post('/request-otp', (req, res) => {
 
   setTimeout(() => {
     delete userOtp[email];
-  }, 300000); // 300,000 ms = 5 minutes
+  }, 300000); // 300,000 ms = 5 minutes
 });
 
 router.post('/verify-otp', (req, res) => {

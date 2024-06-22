@@ -9,7 +9,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.use(bodyParser.json());
 
 router.get("/getUserProfile", async (req, res) => {
-  const { userId } = req.query;
+  const { userId } = req.params;
 
   try {
     const userDetails = await service.getUserProfile(userId);
@@ -148,4 +148,4 @@ router.get("/getProfilePicture", async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;
