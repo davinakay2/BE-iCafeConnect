@@ -25,7 +25,6 @@ module.exports.getExternalAccount = async (icafe_id) => {
 };
 
 module.exports.validateAccount = async (user_id, icafe_id, userBody, passwordBody) => {
-
   const selectedDb = getDatabaseById(icafe_id);
 
   // Step 1: Verify username and password in accounts table
@@ -48,7 +47,13 @@ module.exports.validateAccount = async (user_id, icafe_id, userBody, passwordBod
         [user.username]
       );
 
-      if (existingBinding.length === 0) {
+      if (existingBinding.length > 0) {
+        // Update userid in binding_account table
+        await db.query(
+          "UPDATE binding_account SET userid = ? WHERE username_binding = ?",
+          [user_id, user.username]
+        );
+      } else {
         // Insert into binding_account table
         const hashedPassword = await bcrypt.hash(passwordBody, 10);
         await db.query(
@@ -72,13 +77,43 @@ module.exports.validateAccount = async (user_id, icafe_id, userBody, passwordBod
   return null;
 };
 
-module.exports.insertAccount = async (icafe_id, userBody, passwordBody) => {
+module.exports.insertAccount = async (icafe_id, userId) => {
   const selectedDb = getDatabaseById(icafe_id);
-  const [insertAccount] = await selectedDb.query(
-    "INSERT INTO accounts (username, password, regular_billing, vip_billing, vvip_billing) VALUES  (?, ?, '00:00:00', '00:00:00', '00:00:00')", 
-    [userBody, passwordBody]
-  );
-  return insertAccount;
+
+  try {
+    // Fetch username and password from icafe_users table using userid
+    const [userResult] = await selectedDb.query(
+      "SELECT username, password FROM icafe_users WHERE userid = ?;",
+      [userId]
+    );
+
+    if (userResult.length === 0) {
+      throw new Error(`User with userid ${userId} not found`);
+    }
+
+    const { username, password } = userResult[0];
+    const iccUsername = `icc${username}`;
+
+    // Check if the username already exists in the accounts table
+    const [existingAccount] = await selectedDb.query(
+      "SELECT username FROM accounts WHERE username = ?;",
+      [iccUsername]
+    );
+
+    if (existingAccount.length > 0) {
+      return { message: `Username ${iccUsername} already exists in accounts.` };
+    }
+
+    // Insert a new record into the accounts table using fetched username and password
+    const [insertAccount] = await selectedDb.query(
+      "INSERT INTO accounts (username, password, regular_billing, vip_billing, vvip_billing) VALUES (?, ?, '00:00:00', '00:00:00', '00:00:00');",
+      [iccUsername, password]
+    );
+
+    return { affectedRows: insertAccount.affectedRows, message: 'Account Created Successfully!' };
+  } catch (error) {
+    throw new Error(`Error inserting account: ${error.message}`);
+  }
 };
 
 module.exports.unbindAccount = async (icafe_id, userBody) => {

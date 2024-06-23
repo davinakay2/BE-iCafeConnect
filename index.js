@@ -14,6 +14,8 @@ const icafepageRoutes = require('./controllers/icafepageController');
 
 app.use(express.json());
 app.use(bodyparser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 app.use('/loginpage', loginRoutes);
 app.use('/homepage', homeRoutes);

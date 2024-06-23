@@ -1,27 +1,35 @@
 const {db, db2} = require("../db");
 const bcrypt = require('bcrypt');
-const { Storage } = require('@google-cloud/storage');
-const storage = new Storage({ keyFilename: '../services/settingsServices.json' });
-const bucket = storage.bucket('profile-bucket');
+const path = require('path');
+const fs = require('fs').promises
 
-module.exports.getUserProfile = async (userId) => {
-    const [userData] = await db.query(
-      "SELECT `fullname`, `username`, `email`, `phone` FROM `icafe_users` WHERE `userid` = ?",
+async function uploadProfilePicture(userId, file) {
+  const { originalname, buffer } = file;
+  const fileName = `${userId}_${Date.now()}${path.extname(originalname)}`;
+  const uploadPath = path.join(__dirname, '..', 'uploads', fileName);
+
+  // Save file to disk (or cloud storage like Google Drive, AWS S3, etc.)
+  await fs.writeFile(uploadPath, buffer);
+
+  // Update database with profile picture URL
+  const publicUrl = `/uploads/${fileName}`;
+  await db.execute(
+      "UPDATE icafe_users SET profile_picture_url = ? WHERE userid = ?",
+      [publicUrl, userId]
+  );
+
+  return publicUrl;
+}
+
+async function getProfilePicture(userId) {
+  console.log(userId)
+  const [rows] = await db.execute(
+      "SELECT profile_picture_url FROM icafe_users WHERE userid = ?",
       [userId]
-    );
-  
-    if (userData.length > 0) {
-    
-      return {
-        fullname: userData[0].fullname,
-        username: userData[0].username,
-        email: userData[0].email,
-        phone: userData[0].phone
-      };
-    } else {
-      return null; 
-    }
-  };
+  );
+
+  return rows.length ? rows[0].profile_picture_url : null;
+}
 
 module.exports.updateUser = async (userId, username, email, fullname, phone) => {
     const [{ affectedRows }] = await db.query(
@@ -73,26 +81,6 @@ module.exports.updateUser = async (userId, username, email, fullname, phone) => 
       ? { success: true, message: 'Password updated successfully' }
       : { success: false, message: 'Password update failed' };
   }; 
-
-  module.exports.uploadProfilePicture = async (userId, file) => {
-    const blob = bucket.file(file.originalname);
-    const blobStream = blob.createWriteStream({ resumable: false });
-  
-    return new Promise((resolve, reject) => {
-      blobStream.on('error', (err) => reject(err));
-      
-      blobStream.on('finish', async () => {
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-        await db.query(
-          "UPDATE icafe_users SET profile_picture_url = ? WHERE userid = ?",
-          [publicUrl, userId]
-        );
-        resolve(publicUrl);
-      });
-  
-      blobStream.end(file.buffer);
-    });
-  };
   
   module.exports.getProfilePicture = async (userId) => {
     const [result] = await db.query(
@@ -101,5 +89,10 @@ module.exports.updateUser = async (userId, username, email, fullname, phone) => 
     );
     return result.length ? result[0].profile_picture_url : null;
   };
+
+  module.exports = {
+    uploadProfilePicture,
+    getProfilePicture
+};
   
   

@@ -27,21 +27,12 @@ router.post("/validateAccount", async (req, res) => {
 });
 
 router.post("/insertAccount", async (req, res) => {
-  const {
-    icafe_id: icafeIdBody,
-    username: usernameBody,
-    password: passwordBody,
-  } = req.body;
-
-  const iccUsername = `icc${usernameBody}`;
+  const { icafe_id: icafeIdBody, user_id: userIdBody } = req.body;
 
   try {
-    const affectedRows = await service.insertAccount(
-      icafeIdBody,
-      iccUsername,
-      passwordBody,
-    );
-    if (affectedRows != 0) {
+    const insertResult = await service.insertAccount(icafeIdBody, userIdBody);
+
+    if (insertResult.affectedRows != 0) {
       res.status(201).send("Account Created Successfully!");
     } else {
       res.status(404).send("Unsuccessful Account Creation");
