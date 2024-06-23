@@ -70,9 +70,65 @@ const insertEwalletTopupHistory = async (transactionId, userId) => {
     }
 };
 
+const displayICafeBillingHistory = async () => {
+    try {
+        const [rows] = await db.execute(
+            'SELECT * FROM icafe_billing_history ORDER BY date DESC'
+        );
+        
+        if (rows.length === 0) {
+            console.log('No iCafe billing history records found.');
+            return;
+        }
+        
+        console.log('iCafe Billing History:');
+        rows.forEach(row => {
+            console.log(`Transaction ID: ${row.icafe_transaction_id}`);
+            console.log(`User ID: ${row.userid}`);
+            console.log(`iCafe Name: ${row.icafe_name}`);
+            console.log(`Date: ${row.date}`);
+            console.log(`Hours: ${row.hours}`);
+            console.log(`PC Category: ${row.pc_category}`);
+            console.log(`Payment Method: ${row.payment_method}`);
+            console.log(`Price: ${row.price}`);
+            console.log('------------------------');
+        });
+    } catch (error) {
+        console.error('Error fetching iCafe billing history:', error.message);
+    }
+};
+
+
+const displayEwalletTopupHistory = async () => {
+    try {
+        const [rows] = await db.execute(
+            'SELECT * FROM ewallet_topup_history ORDER BY date DESC'
+        );
+        
+        if (rows.length === 0) {
+            console.log('No eWallet top-up history records found.');
+            return;
+        }
+        
+        console.log('eWallet Top-up History:');
+        rows.forEach(row => {
+            console.log(`Transaction ID: ${row.ewallet_transaction_id}`);
+            console.log(`User ID: ${row.userid}`);
+            console.log(`Date: ${row.date}`);
+            console.log(`Top-up Amount: ${row.topup_amount}`);
+            console.log(`Payment Method: ${row.payment_method}`);
+            console.log('------------------------');
+        });
+    } catch (error) {
+        console.error('Error fetching eWallet top-up history:', error.message);
+    }
+};
+
 module.exports = {
     insertICafeBillingHistory,
-    insertEwalletTopupHistory
+    insertEwalletTopupHistory,
+    displayICafeBillingHistory,
+    displayEwalletTopupHistory
 };
 
 

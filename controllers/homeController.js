@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const services = require("../services/homeServices"); // Adjust the path as necessary
+const services = require("../services/homeServices"); 
 
 // Route to fetch promo banner URL
 router.get('/promobanner', async (req, res) => {
