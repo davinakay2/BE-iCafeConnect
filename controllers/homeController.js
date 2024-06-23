@@ -1,6 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const services = require("../services/homeServices"); 
+const services = require("../services/homeServices");
+const path = require('path'); 
+
+router.use('/icafeimgs', express.static(path.join(__dirname, 'icafeimgs')));
+router.use('/promobanners', express.static(path.join(__dirname, 'promobanners')));
+
+router.get('/getCafeImageUrl', async (req, res) => {
+  const { icafeId } = req.query; 
+  console.log(icafeId);
+  try {
+    const cafeImageUrl = await services.getCafeImageUrl(icafeId);
+
+    if (cafeImageUrl) {
+      res.status(200).json({ success: true, cafeImageUrl });
+    } else {
+      res.status(404).json({ success: false, message: "Cafe image not found" });
+    }
+  } catch (error) {
+    console.error("Error retrieving cafe image:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving cafe image",
+    });
+  }
+});
 
 // Route to fetch promo banner URL
 router.get('/promobanner', async (req, res) => {

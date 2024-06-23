@@ -13,6 +13,14 @@ const getDatabaseById = (icafe_id) => {
   }
 };
 
+module.exports.getCafeImageUrl = async (icafeId) => {
+  const [result] = await db.query(
+    "SELECT icafe_image_url FROM icafe_info WHERE icafe_id = ?",
+    [icafeId]
+  );
+  return result.length ? result[0].icafe_image_url : null;
+};
+
 module.exports.getPromoBanner = async () => {
   const [result] = await db.query(
     "SELECT banner_url FROM promotions WHERE promoid = 1"
