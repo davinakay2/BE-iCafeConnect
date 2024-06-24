@@ -10,13 +10,15 @@ const upload = multer({ storage: storage });
 router.use(bodyParser.json());
 
 router.get("/getUserProfile", async (req, res) => {
-  const { userId } = req.params;
-
+  const userId = req.query.userId;
+  console.log("your userid:", userId);
   try {
     const userDetails = await service.getUserProfile(userId);
 
+    console.log("user id: ", userId);
     if (userDetails) {
-      res.status(200).json({ success: true, userDetails });
+      res.status(200).json({ success: true, userDetails: userDetails[0] });
+      console.log(userDetails[0]);
     } else {
       res.status(404).json({ success: false, message: "User not found" });
     }
@@ -40,8 +42,9 @@ router.put("/updateUser", async (req, res) => {
       fullname,
       phone
     );
-
-    if (affectedRows > 0) {
+    console.log(affectedRows);
+    console.log(req.body);
+    if (affectedRows) {
       res
         .status(200)
         .json({ success: true, message: "User updated successfully" });
@@ -81,6 +84,7 @@ router.delete("/deleteUser", async (req, res) => {
 
 router.post("/changePassword", async (req, res) => {
   const { userId, oldPassword, newPassword, confirmPassword } = req.body;
+  console.log(req.body);
 
   try {
     const result = await service.changePassword(
@@ -104,42 +108,48 @@ router.post("/changePassword", async (req, res) => {
   }
 });
 
-router.post('/uploadProfilePicture', upload.single('profilePicture'), async (req, res) => {
-  const { userId } = req.body;
+router.post(
+  "/uploadProfilePicture",
+  upload.single("profilePicture"),
+  async (req, res) => {
+    const { userId } = req.body;
 
-  try {
+    try {
       if (!req.file) {
-          return res.status(400).send("No file uploaded.");
+        return res.status(400).send("No file uploaded.");
       }
 
       const publicUrl = await service.uploadProfilePicture(userId, req.file);
       res.status(200).json({ success: true, profilePictureUrl: publicUrl });
-  } catch (error) {
+    } catch (error) {
       console.error("Error uploading profile picture:", error);
       res.status(500).json({
-          success: false,
-          message: "An error occurred while uploading profile picture",
+        success: false,
+        message: "An error occurred while uploading profile picture",
       });
+    }
   }
-});
+);
 
-router.get('/getProfilePicture', async (req, res) => {
+router.get("/getProfilePicture", async (req, res) => {
   const { userId } = req.query;
-  console.log(userId)
+  console.log(userId);
   try {
-      const profilePictureUrl = await service.getProfilePicture(userId);
+    const profilePictureUrl = await service.getProfilePicture(userId);
 
-      if (profilePictureUrl) {
-          res.status(200).json({ success: true, profilePictureUrl });
-      } else {
-          res.status(404).json({ success: false, message: "Profile picture not found" });
-      }
+    if (profilePictureUrl) {
+      res.status(200).json({ success: true, profilePictureUrl });
+    } else {
+      res
+        .status(404)
+        .json({ success: false, message: "Profile picture not found" });
+    }
   } catch (error) {
-      console.error("Error retrieving profile picture:", error);
-      res.status(500).json({
-          success: false,
-          message: "An error occurred while retrieving profile picture",
-      });
+    console.error("Error retrieving profile picture:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving profile picture",
+    });
   }
 });
 

@@ -1,7 +1,8 @@
-const {db, db1, db2, db3} = require("../db");
-
+const { db, db1, db2, db3 } = require("../db");
+const path = require("path");
+const fs = require("fs");
 const getDatabaseById = (icafe_id) => {
-  switch(icafe_id) {
+  switch (icafe_id) {
     case 1:
       return db1;
     case 2:
@@ -18,7 +19,7 @@ module.exports.getCafeImageUrl = async (icafeId) => {
     "SELECT icafe_image_url FROM icafe_info WHERE icafe_id = ?",
     [icafeId]
   );
-  return result.length ? result[0].icafe_image_url : null;
+  return result.length ? result[0].icafe_image_url : null;
 };
 
 module.exports.getPromoBanner = async () => {
@@ -29,11 +30,41 @@ module.exports.getPromoBanner = async () => {
 };
 
 module.exports.getFeaturediCafes = async () => {
+  try {
     const [icafes] = await db.query(
-      "SELECT name, address, rating FROM icafe_info WHERE featuredYN = 'Y';"
+      "SELECT name, address, rating, icafe_image_url, icafe_id FROM icafe_info WHERE featuredYN = 'Y';"
     );
-    return [icafes];
-  };
+    console.log(icafes);
+    // Format the image URLs to include the server base URL and convert to base64
+    const formattedICafes = icafes.map((icafe) => {
+      const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
+      if (icafe.icafe_image_url) {
+        const imagePath = path.join(__dirname, "..", icafe.icafe_image_url);
+        if (fs.existsSync(imagePath)) {
+          const image = fs.readFileSync(imagePath);
+          const base64Image = Buffer.from(image).toString("base64");
+          return {
+            ...icafe,
+            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image: base64Image,
+          };
+        } else {
+          return {
+            ...icafe,
+            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image: null,
+          };
+        }
+      }
+      return icafe;
+    });
+
+    return formattedICafes;
+  } catch (error) {
+    console.error("Error fetching iCafes:", error);
+    throw error; // Propagate the error to be handled by the caller
+  }
+};
 
 // module.exports.getPriceLabel = async() => {
 //     const [icafes] = await db.query(
@@ -60,77 +91,104 @@ module.exports.getFeaturediCafes = async () => {
 //     return [icafes];
 //   };
 
+// Example service method to fetch iCafes from the database
 module.exports.getAlliCafes = async () => {
+  try {
+    const [icafes] = await db.query(
+      "SELECT icafe_id, name, open_time , close_time, address, rating, icafe_image_url FROM icafe_info;"
+    );
+
+    // Format the image URLs to include the server base URL and convert to base64
+    const formattedICafes = icafes.map((icafe) => {
+      const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
+      if (icafe.icafe_image_url) {
+        const imagePath = path.join(__dirname, "..", icafe.icafe_image_url);
+        if (fs.existsSync(imagePath)) {
+          const image = fs.readFileSync(imagePath);
+          const base64Image = Buffer.from(image).toString("base64");
+          return {
+            ...icafe,
+            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image: base64Image,
+          };
+        } else {
+          return {
+            ...icafe,
+            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image: null,
+          };
+        }
+      }
+      return icafe;
+    });
+
+    return formattedICafes;
+  } catch (error) {
+    console.error("Error fetching iCafes:", error);
+    throw error; // Propagate the error to be handled by the caller
+  }
+};
+
+module.exports.getSearchediCafes = async (iCafeName) => {
   const [icafes] = await db.query(
-    "SELECT icafe_id, name, open_time, close_time, address, rating FROM icafe_info;"
+    "SELECT name, open_time, close_time, address, rating FROM icafe_info WHERE name = ?;",
+    [iCafeName]
   );
   return [icafes];
 };
 
-module.exports.getSearchediCafes = async (iCafeName) => {
-    const [icafes] = await db.query(
-      "SELECT name, open_time, close_time, address, rating FROM icafe_info WHERE name = ?;",
-      [iCafeName]
-    );
-    return [icafes];
-  };
-  
-  module.exports.getUserBilling = async (username, icafe_id) => {
-  
+module.exports.getUserBilling = async (username, icafe_id) => {
   const selectedDb = getDatabaseById(icafe_id);
   const [billing] = await selectedDb.query(
-    "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE username = ?;",
+    "SELECT regular_billing, vip_billing, vvip_billing FROM binding_account WHERE username_binding = ?;",
     [username]
   );
-  
-  return [billing];
-};
-  
-  module.exports.getUsername = async (userId, icafe_id) => {
-    const selectedDb = getDatabaseById(icafe_id);
-    const [result] = await selectedDb.query(
-      "SELECT username, ewallet_balance FROM icafe_users WHERE userid = ?;",
-      [userId]
-    );
-    return result;
-  };
-  
-  module.exports.getPCCategories = async (icafe_id) => {
-    try {
-      const selectedDb = getDatabaseById(icafe_id);
-      const [categories] = await selectedDb.query(
-        "SELECT pc_category FROM icafe_details WHERE icafe_id = ?;",
-        [icafe_id]
-      );
-      return categories.map(category => category.pc_category);
-    } catch (error) {
-      throw new Error(`Error fetching PC categories: ${error.message}`);
-    }
-  };
-  
-  module.exports.getiCafeDetails = async (detailsId, icafe_id) => {
-    const selectedDb = getDatabaseById(icafe_id);
-    const [details] = await selectedDb.query(
-      "SELECT pc_category, price, total_computers, available_computers FROM icafe_details WHERE icafe_detail_id = ?;",
-      [detailsId]
-    );
-    return [details];
-  };
-  
-  module.exports.getComputerSpecs = async (detailsId, icafe_id) => {
-    const selectedDb = getDatabaseById(icafe_id);
-    const [specs] = await selectedDb.query(
-      "SELECT pc_category, description FROM icafe_details WHERE icafe_detail_id = ?;",
-      [detailsId]
-    );
-    return [specs];
-  };
 
-  module.exports.geteWalletBalance = async (userId) => {
-    const [balance] = await db.query(
-      "SELECT ewallet_balance FROM icafe_users WHERE userid = ?;",
-      [userId]
+  return billing[0];
+};
+module.exports.getUsername = async (userId) => {
+  const [result] = await db.query(
+    "SELECT username FROM icafe_users WHERE userid = ?;",
+    [userId]
+  );
+  return result[0];
+};
+
+module.exports.getPCCategories = async (icafe_id) => {
+  try {
+    const selectedDb = getDatabaseById(icafe_id);
+    const [categories] = await selectedDb.query(
+      "SELECT pc_category FROM icafe_details WHERE icafe_id = ?;",
+      [icafe_id]
     );
-    return balance;
-  };
-  
+    return categories.map((category) => category.pc_category);
+  } catch (error) {
+    throw new Error(`Error fetching PC categories: ${error.message}`);
+  }
+};
+
+module.exports.getiCafeDetails = async (detailsId, icafe_id) => {
+  const selectedDb = getDatabaseById(icafe_id);
+  const [details] = await selectedDb.query(
+    "SELECT pc_category, price, total_computers, available_computers FROM icafe_details WHERE icafe_detail_id = ?;",
+    [detailsId]
+  );
+  return [details];
+};
+
+module.exports.getComputerSpecs = async (detailsId, icafe_id) => {
+  const selectedDb = getDatabaseById(icafe_id);
+  const [specs] = await selectedDb.query(
+    "SELECT pc_category, description FROM icafe_details WHERE icafe_detail_id = ?;",
+    [detailsId]
+  );
+  return [specs];
+};
+
+module.exports.geteWalletBalance = async (userId) => {
+  const [balance] = await db.query(
+    "SELECT ewallet_balance FROM icafe_users WHERE userid = ?;",
+    [userId]
+  );
+  return balance[0];
+};

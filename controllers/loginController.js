@@ -1,18 +1,18 @@
 const express = require("express"),
-router = express.Router();
+  router = express.Router();
 const service = require("../services/loginServices");
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 465, // Gmail SMTP port (465 or 587)
   secure: true, // true for 465, false for other ports
   auth: {
-      user: 'icafeconnectapp@gmail.com', // Your email address
-      pass: 'fynu gzny phsg lptr' // Your app password for Gmail
-  }
+    user: "icafeconnectapp@gmail.com", // Your email address
+    pass: "fynu gzny phsg lptr", // Your app password for Gmail
+  },
 });
-transporter.on('log', console.log);
+transporter.on("log", console.log);
 
 // Function to generate OTP
 const generateOtp = () => {
@@ -20,7 +20,7 @@ const generateOtp = () => {
   return Math.floor(100000 + Math.random() * 900000);
 };
 
-const bodyParser = require('body-parser');
+const bodyParser = require("body-parser");
 const app = express();
 app.use(bodyParser.json());
 let userOtp = {};
@@ -72,7 +72,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-router.get('/request-otp', (req, res) => {
+router.post("/request-otp", (req, res) => {
   const { email } = req.body;
   const otp = generateOtp();
 
@@ -82,18 +82,18 @@ router.get('/request-otp', (req, res) => {
   const mailOptions = {
     from: {
       name: "ICafe Connect",
-      address: process.env.EMAIL_USER
+      address: process.env.EMAIL_USER,
     },
     to: email,
-    subject: 'Your OTP Code',
+    subject: "Your OTP Code",
     text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
-      return res.status(500).send('Error sending email');
+      return res.status(500).send("Error sending email");
     }
-    res.status(200).send('OTP sent');
+    res.status(200).send("OTP sent");
   });
 
   setTimeout(() => {
@@ -101,24 +101,24 @@ router.get('/request-otp', (req, res) => {
   }, 300000); // 300,000 ms = 5 minutes
 });
 
-router.post('/verify-otp', (req, res) => {
+router.post("/verify-otp", (req, res) => {
   const { email, otp } = req.body;
 
   if (userOtp[email] === otp) {
     delete userOtp[email]; // OTP is valid, delete it to prevent reuse
-    res.status(200).send('OTP verified');
+    res.status(200).send("OTP verified");
   } else {
-    res.status(400).send('Invalid OTP');
+    res.status(400).send("Invalid OTP");
   }
 });
 
 // Route to reset password
-router.post('/reset-password', async (req, res) => {
+router.post("/reset-password", async (req, res) => {
   const { email, newPassword } = req.body;
 
   const updatePassword = await service.updatePassword(email, newPassword);
-  
-  res.json(updatePassword)
+
+  res.json(updatePassword);
 });
 
 // const port = 3000;

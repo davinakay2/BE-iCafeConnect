@@ -21,7 +21,7 @@ module.exports.getPCBillingInfo = async (icafe_id, pc_category) => {
       "SELECT icafe_detail_id, pc_category, total_computers, available_computers FROM icafe_details WHERE icafe_id = ? AND pc_category = ?;",
       [icafe_id, pc_category]
     );
-    return billingInfo;
+    return billingInfo[0];
   } catch (error) {
     console.error("Error in getPCBillingInfo:", error);
     throw error; // Re-throw the error to propagate it up
@@ -35,7 +35,7 @@ module.exports.getComputerSpecifications = async (icafe_detail_id) => {
       "SELECT icafe_detail_id, pc_category, description, processor, vga, monitor, keyboard, mouse, headset FROM icafe_details WHERE icafe_detail_id = ?;",
       [icafe_detail_id]
     );
-    return specifications;
+    return specifications[0];
   } catch (error) {
     console.error("Error in getComputerSpecifications:", error);
     throw error; // Re-throw the error to propagate it up
