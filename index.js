@@ -11,7 +11,6 @@ const bindingAccountRoutes = require("./controllers/bindingAccountController");
 const paymentRoutes = require("./controllers/paymentController");
 const settingsRoutes = require("./controllers/settingsController");
 const icafepageRoutes = require("./controllers/icafepageController");
-const historyRoutes = require("./controllers/historyController");
 
 app.use(express.json());
 app.use(bodyparser.json());
@@ -24,7 +23,7 @@ app.use("/bindingaccountpage", bindingAccountRoutes);
 app.use("/paymentpage", paymentRoutes);
 app.use("/settingspage", settingsRoutes);
 app.use("/icafepage", icafepageRoutes);
-app.use("/historypage", historyRoutes);
+
 const path = require("path");
 app.use("/icafeimgs", express.static(path.join(__dirname, "../icafeimgs")));
 

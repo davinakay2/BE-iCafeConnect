@@ -3,32 +3,12 @@ const bcrypt = require("bcrypt");
 const path = require("path");
 const fs = require("fs").promises;
 
-async function uploadProfilePicture(userId, file) {
-  const { originalname, buffer } = file;
-  const fileName = `${userId}_${Date.now()}${path.extname(originalname)}`;
-  const uploadPath = path.join(__dirname, "..", "uploads", fileName);
-
-  // Save file to disk (or cloud storage like Google Drive, AWS S3, etc.)
-  await fs.writeFile(uploadPath, buffer);
-
-  // Update database with profile picture URL
-  const publicUrl = `/uploads/${fileName}`;
-  await db.execute(
-    "UPDATE icafe_users SET profile_picture_url = ? WHERE userid = ?",
-    [publicUrl, userId]
-  );
-
-  return publicUrl;
-}
-
-async function getProfilePicture(userId) {
-  console.log(userId);
-  const [rows] = await db.execute(
-    "SELECT profile_picture_url FROM icafe_users WHERE userid = ?",
+async function getUserProfile(userId) {
+  const result = await db.query(
+    "SELECT userid, fullname, username, email, phone FROM icafe_users WHERE userid = ?",
     [userId]
   );
-
-  return rows.length ? rows[0].profile_picture_url : null;
+  return result[0];
 }
 
 async function updateUser(userId, username, email, fullname, phone) {
@@ -104,24 +84,7 @@ async function changePassword(
   }
 }
 
-module.exports.getProfilePicture = async (userId) => {
-  const [result] = await db.query(
-    "SELECT profile_picture_url FROM icafe_users WHERE userid = ?",
-    [userId]
-  );
-  return result.length ? result[0].profile_picture_url : null;
-};
-
-async function getUserProfile(userId) {
-  const result = await db.query(
-    "SELECT userid, fullname, username, email, phone FROM icafe_users WHERE userid = ?",
-    [userId]
-  );
-  return result[0];
-}
 module.exports = {
-  uploadProfilePicture,
-  getProfilePicture,
   getUserProfile,
   changePassword,
   updateUser,

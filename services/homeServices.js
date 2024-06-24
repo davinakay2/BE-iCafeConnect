@@ -14,21 +14,6 @@ const getDatabaseById = (icafe_id) => {
   }
 };
 
-module.exports.getCafeImageUrl = async (icafeId) => {
-  const [result] = await db.query(
-    "SELECT icafe_image_url FROM icafe_info WHERE icafe_id = ?",
-    [icafeId]
-  );
-  return result.length ? result[0].icafe_image_url : null;
-};
-
-module.exports.getPromoBanner = async () => {
-  const [result] = await db.query(
-    "SELECT banner_url FROM promotions WHERE promoid = 1"
-  );
-  return result.length ? result[0].banner_url : null;
-};
-
 module.exports.getFeaturediCafes = async () => {
   try {
     const [icafes] = await db.query(
@@ -66,38 +51,32 @@ module.exports.getFeaturediCafes = async () => {
   }
 };
 
-// module.exports.getPriceLabel = async() => {
-//     const [icafes] = await db.query(
-//       `SELECT icafe_id, avg_price,
-//       CASE
-//           WHEN avg_price > (total_average + 2000) THEN 'High Price'
-//           WHEN avg_price >= (total_average - 2000) AND avg_price <= (total_average + 2000) THEN 'Mid Price'
-//           ELSE 'Low Price'
-//       END AS price_label
-//   FROM (
-//       SELECT icafe_id, AVG(price) AS avg_price
-//       FROM icafe_details
-//       GROUP BY icafe_id
-//   ) subquery
-//   CROSS JOIN (
-//       SELECT ROUND(AVG(avg_price)) AS total_average
-//       FROM (
-//           SELECT AVG(price) AS avg_price
-//           FROM icafe_details
-//           GROUP BY icafe_id
-//       ) avg_subquery
-//   ) total_avg_subquery;`
-//     );
-//     return [icafes];
-//   };
-
-// Example service method to fetch iCafes from the database
 module.exports.getAlliCafes = async () => {
   try {
     const [icafes] = await db.query(
-      "SELECT icafe_id, name, open_time , close_time, address, rating, icafe_image_url FROM icafe_info;"
+      `SELECT 
+        ii.icafe_id, 
+        ii.name, 
+        ii.open_time, 
+        ii.close_time, 
+        ii.address, 
+        ii.rating, 
+        ii.image_url, 
+        CASE
+            WHEN bp.price < 15000 THEN '$'
+            WHEN bp.price >= 15000 AND bp.price < 20000 THEN '$$'
+            ELSE '$$$'
+        END AS price_category
+        FROM 
+            icafe_info ii
+        JOIN 
+            icafe_details id ON ii.icafe_id = id.icafe_id
+        JOIN 
+            billing_price bp ON id.icafe_detail_id = bp.icafe_detail_id
+        WHERE 
+            id.pc_category = 'Regular' 
+            AND bp.hours = 1;`
     );
-
     // Format the image URLs to include the server base URL and convert to base64
     const formattedICafes = icafes.map((icafe) => {
       const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
@@ -125,8 +104,45 @@ module.exports.getAlliCafes = async () => {
     return formattedICafes;
   } catch (error) {
     console.error("Error fetching iCafes:", error);
-    throw error; // Propagate the error to be handled by the caller
-  }
+    throw error; // Propagate the error to be handled by the caller
+  }
+};
+
+module.exports.getAdsiCafes = async () => {
+  try {
+    const [icafes] = await db.query(
+      `SELECT icafe_id, name, ads_url FROM icafe_info
+       WHERE adsYN = "Y";`
+    );
+    // Format the image URLs to include the server base URL and convert to base64
+    const formattedAdsiCafes = icafes.map((icafe) => {
+      const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
+      if (icafe.ads_url) {
+        const imagePath = path.join(__dirname, "..", icafe.ads_url);
+        if (fs.existsSync(imagePath)) {
+          const image = fs.readFileSync(imagePath);
+          const base64Image = Buffer.from(image).toString("base64");
+          return {
+            ...icafe,
+            ads_url: `${serverBaseUrl}${icafe.ads_url}`,
+            image: base64Image,
+          };
+        } else {
+          return {
+            ...icafe,
+            ads_url: `${serverBaseUrl}${icafe.ads_url}`,
+            image: null,
+          };
+        }
+      }
+      return icafe;
+    });
+
+    return formattedAdsiCafes;
+  } catch (error) {
+    console.error("Error fetching iCafes:", error);
+    throw error; // Propagate the error to be handled by the caller
+  }
 };
 
 module.exports.getSearchediCafes = async (iCafeName) => {
@@ -140,7 +156,7 @@ module.exports.getSearchediCafes = async (iCafeName) => {
 module.exports.getUserBilling = async (username, icafe_id) => {
   const selectedDb = getDatabaseById(icafe_id);
   const [billing] = await selectedDb.query(
-    "SELECT regular_billing, vip_billing, vvip_billing FROM binding_account WHERE username_binding = ?;",
+    "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE username_binding = ?;",
     [username]
   );
 
@@ -152,37 +168,6 @@ module.exports.getUsername = async (userId) => {
     [userId]
   );
   return result[0];
-};
-
-module.exports.getPCCategories = async (icafe_id) => {
-  try {
-    const selectedDb = getDatabaseById(icafe_id);
-    const [categories] = await selectedDb.query(
-      "SELECT pc_category FROM icafe_details WHERE icafe_id = ?;",
-      [icafe_id]
-    );
-    return categories.map((category) => category.pc_category);
-  } catch (error) {
-    throw new Error(`Error fetching PC categories: ${error.message}`);
-  }
-};
-
-module.exports.getiCafeDetails = async (detailsId, icafe_id) => {
-  const selectedDb = getDatabaseById(icafe_id);
-  const [details] = await selectedDb.query(
-    "SELECT pc_category, price, total_computers, available_computers FROM icafe_details WHERE icafe_detail_id = ?;",
-    [detailsId]
-  );
-  return [details];
-};
-
-module.exports.getComputerSpecs = async (detailsId, icafe_id) => {
-  const selectedDb = getDatabaseById(icafe_id);
-  const [specs] = await selectedDb.query(
-    "SELECT pc_category, description FROM icafe_details WHERE icafe_detail_id = ?;",
-    [detailsId]
-  );
-  return [specs];
 };
 
 module.exports.geteWalletBalance = async (userId) => {

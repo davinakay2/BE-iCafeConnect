@@ -16,14 +16,6 @@ const getDatabaseById = (icafe_id) => {
   }
 };
 
-module.exports.getExternalAccount = async (icafe_id) => {
-  const selectedDb = getDatabaseById(icafe_id);
-  const [externalAccounts] = await selectedDb.query(
-    "SELECT * FROM `accounts`"
-  );
-  return externalAccounts;
-};
-
 module.exports.validateAccount = async (user_id, icafe_id, userBody, passwordBody) => {
   const selectedDb = getDatabaseById(icafe_id);
 
@@ -116,11 +108,18 @@ module.exports.insertAccount = async (icafe_id, userId) => {
   }
 };
 
-module.exports.unbindAccount = async (icafe_id, userBody) => {
-  const selectedDb = getDatabaseById(icafe_id);
-  const [unbindAccount] = await selectedDb.query(
-    "DELETE FROM icafes.binding_account WHERE username_binding = ?", 
-    [userBody]
+module.exports.unbindAccount = async (binding_id) => {
+  const [unbindAccount] = await db.query(
+    `DELETE FROM icafes.binding_account WHERE username_binding = ?`, 
+    [binding_id]
   );
   return unbindAccount;
+};
+
+module.exports.getBindAccount = async (user_id) => {
+  const [getBindAccount] = await db.query(
+    `SELECT binding_id, username_binding, ii.name FROM binding_account ba JOIN icafe_info ii on ba.icafe_id = ii.icafe_id WHERE ba.user_id = ?`, 
+    [user_id]
+  );
+  return getBindAccount;
 };

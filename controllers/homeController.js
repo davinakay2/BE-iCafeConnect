@@ -3,43 +3,6 @@ const router = express.Router();
 const services = require("../services/homeServices");
 const path = require("path");
 
-router.use("/icafeimgs", express.static(path.join(__dirname, "icafeimgs")));
-router.use(
-  "/promobanners",
-  express.static(path.join(__dirname, "promobanners"))
-);
-
-router.get("/getCafeImageUrl", async (req, res) => {
-  const { icafeId } = req.query;
-  console.log(icafeId);
-  try {
-    const cafeImageUrl = await services.getCafeImageUrl(icafeId);
-
-    if (cafeImageUrl) {
-      res.status(200).json({ success: true, cafeImageUrl });
-    } else {
-      res.status(404).json({ success: false, message: "Cafe image not found" });
-    }
-  } catch (error) {
-    console.error("Error retrieving cafe image:", error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while retrieving cafe image",
-    });
-  }
-});
-
-// Route to fetch promo banner URL
-router.get("/promobanner", async (req, res) => {
-  try {
-    const bannerUrl = await services.getPromoBanner();
-    res.json({ bannerUrl });
-  } catch (error) {
-    console.error("Error fetching promo banner:", error);
-    res.status(500).send("An error occurred while fetching promo banner.");
-  }
-});
-
 // Route to fetch featured iCafes
 router.get("/getFeaturediCafes", async (req, res) => {
   try {
@@ -63,19 +26,18 @@ router.get("/getAlliCafes", async (req, res) => {
     });
   }
 });
-
-// Route to search for iCafes by name
-router.get("/getSearchediCafes", async (req, res) => {
-  const { name } = req.params;
+ // Get iCafe Ads
+router.get("/getAdsiCafes", async (req, res) => {
   try {
-    const searchediCafes = await services.getSearchediCafes(name);
-    res.json(searchediCafes);
+    const adsiCafes = await services.getAdsiCafes();
+    res.json(adsiCafes);
   } catch (error) {
-    console.error(`Error searching iCafes by name "${name}":`, error);
-    res
-      .status(500)
-      .send(`An error occurred while searching iCafes by name "${name}".`);
-  }
+    console.error("Error fetching ads iCafes:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching ads iCafes.",
+    });
+  }
 });
 
 // Route to fetch user billing info for a specific iCafe
@@ -116,60 +78,6 @@ router.get("/getUsername", async (req, res) => {
   } catch (error) {
     console.error("Error fetching username:", error);
     res.status(500).send("An error occurred while fetching username.");
-  }
-});
-
-// Route to fetch PC categories for a specific iCafe
-router.get("/getPCCategories", async (req, res) => {
-  const { icafe_id } = req.params;
-  try {
-    const pcCategories = await services.getPCCategories(icafe_id);
-    res.json(pcCategories);
-  } catch (error) {
-    console.error(`Error fetching PC categories for iCafe ${icafe_id}:`, error);
-    res
-      .status(500)
-      .send(
-        `An error occurred while fetching PC categories for iCafe ${icafe_id}.`
-      );
-  }
-});
-
-// Route to fetch details of a specific iCafe
-router.get("/getiCafeDetails", async (req, res) => {
-  const { detailsId, icafe_id } = req.params;
-  try {
-    const iCafeDetails = await services.getiCafeDetails(detailsId, icafe_id);
-    res.json(iCafeDetails);
-  } catch (error) {
-    console.error(
-      `Error fetching details for iCafe with detailsId ${detailsId} and iCafe ${icafe_id}:`,
-      error
-    );
-    res
-      .status(500)
-      .send(
-        `An error occurred while fetching details for iCafe with detailsId ${detailsId} and iCafe ${icafe_id}.`
-      );
-  }
-});
-
-// Route to fetch computer specifications for a specific iCafe detail
-router.get("/getComputerSpecs", async (req, res) => {
-  const { detailsId, icafe_id } = req.params;
-  try {
-    const computerSpecs = await services.getComputerSpecs(detailsId, icafe_id);
-    res.json(computerSpecs);
-  } catch (error) {
-    console.error(
-      `Error fetching computer specifications for iCafe detail ${detailsId} and iCafe ${icafe_id}:`,
-      error
-    );
-    res
-      .status(500)
-      .send(
-        `An error occurred while fetching computer specifications for iCafe detail ${detailsId} and iCafe ${icafe_id}.`
-      );
   }
 });
 

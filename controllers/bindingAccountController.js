@@ -3,12 +3,6 @@ router = express.Router();
 
 const service = require("../services/bindingAccountServices");
 
-router.get("/getExternalAccount", async (req, res) => {
-
-  const getExternalAccount = await service.getExternalAccount();
-  res.json(getExternalAccount)
-});
-
 router.post("/validateAccount", async (req, res) => {
   const { user_id, icafe_id, username: userBody, password: passwordBody } = req.body;
 
@@ -41,6 +35,32 @@ router.post("/insertAccount", async (req, res) => {
     console.error("Error creating account:", error);
     res.status(500).send("Internal Server Error");
   }
+});
+
+router.post("/unbindAccount", async (req, res) => {
+  const binding_id = req.query.binding_id;
+
+  try {
+    const unbindResult = await service.unbindAccount(binding_id);
+
+    res.status(201).send("Undbind Successfull!");
+  } catch (error) {
+    console.error("Error creating account:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+router.get("/getBindAccount", async (req, res) => {
+  const user_id = req.query.user_id;
+  console.log(user_id)
+  try {
+    const insertResult = await service.getBindAccount(user_id);
+
+    res.json(insertResult)
+  } catch (error) {
+    console.error("Error creating account:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 
