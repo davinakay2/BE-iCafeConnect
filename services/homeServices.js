@@ -1,42 +1,30 @@
-const { db, db1, db2, db3 } = require("../db");
+const { getDatabaseById, db, db1, db2, db3 } = require("../db");
 const path = require("path");
 const fs = require("fs");
-const getDatabaseById = (icafe_id) => {
-  switch (icafe_id) {
-    case 1:
-      return db1;
-    case 2:
-      return db2;
-    case 3:
-      return db3;
-    default:
-      return db;
-  }
-};
 
 module.exports.getFeaturediCafes = async () => {
   try {
     const [icafes] = await db.query(
-      "SELECT name, address, rating, icafe_image_url, icafe_id FROM icafe_info WHERE featuredYN = 'Y';"
+      "SELECT name, address, rating, image_url, icafe_id FROM icafe_info WHERE featuredYN = 'Y';"
     );
     console.log(icafes);
     // Format the image URLs to include the server base URL and convert to base64
     const formattedICafes = icafes.map((icafe) => {
       const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
-      if (icafe.icafe_image_url) {
-        const imagePath = path.join(__dirname, "..", icafe.icafe_image_url);
+      if (icafe.image_url) {
+        const imagePath = path.join(__dirname, "..", icafe.image_url);
         if (fs.existsSync(imagePath)) {
           const image = fs.readFileSync(imagePath);
           const base64Image = Buffer.from(image).toString("base64");
           return {
             ...icafe,
-            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image_url: `${serverBaseUrl}${icafe.image_url}`,
             image: base64Image,
           };
         } else {
           return {
             ...icafe,
-            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image_url: `${serverBaseUrl}${icafe.image_url}`,
             image: null,
           };
         }
@@ -80,20 +68,20 @@ module.exports.getAlliCafes = async () => {
     // Format the image URLs to include the server base URL and convert to base64
     const formattedICafes = icafes.map((icafe) => {
       const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
-      if (icafe.icafe_image_url) {
-        const imagePath = path.join(__dirname, "..", icafe.icafe_image_url);
+      if (icafe.image_url) {
+        const imagePath = path.join(__dirname, "..", icafe.image_url);
         if (fs.existsSync(imagePath)) {
           const image = fs.readFileSync(imagePath);
           const base64Image = Buffer.from(image).toString("base64");
           return {
             ...icafe,
-            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image_url: `${serverBaseUrl}${icafe.image_url}`,
             image: base64Image,
           };
         } else {
           return {
             ...icafe,
-            icafe_image_url: `${serverBaseUrl}${icafe.icafe_image_url}`,
+            image_url: `${serverBaseUrl}${icafe.image_url}`,
             image: null,
           };
         }
@@ -105,7 +93,7 @@ module.exports.getAlliCafes = async () => {
   } catch (error) {
     console.error("Error fetching iCafes:", error);
     throw error; // Propagate the error to be handled by the caller
-  }
+  }
 };
 
 module.exports.getAdsiCafes = async () => {
@@ -142,7 +130,7 @@ module.exports.getAdsiCafes = async () => {
   } catch (error) {
     console.error("Error fetching iCafes:", error);
     throw error; // Propagate the error to be handled by the caller
-  }
+  }
 };
 
 module.exports.getSearchediCafes = async (iCafeName) => {
@@ -155,13 +143,15 @@ module.exports.getSearchediCafes = async (iCafeName) => {
 
 module.exports.getUserBilling = async (username, icafe_id) => {
   const selectedDb = getDatabaseById(icafe_id);
+  console.log("your icafe id:", icafe_id);
   const [billing] = await selectedDb.query(
-    "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE username_binding = ?;",
+    "SELECT regular_billing, vip_billing, vvip_billing FROM accounts WHERE username = ?;",
     [username]
   );
 
   return billing[0];
 };
+
 module.exports.getUsername = async (userId) => {
   const [result] = await db.query(
     "SELECT username FROM icafe_users WHERE userid = ?;",

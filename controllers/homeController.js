@@ -26,7 +26,7 @@ router.get("/getAlliCafes", async (req, res) => {
     });
   }
 });
- // Get iCafe Ads
+// Get iCafe Ads
 router.get("/getAdsiCafes", async (req, res) => {
   try {
     const adsiCafes = await services.getAdsiCafes();
@@ -36,14 +36,14 @@ router.get("/getAdsiCafes", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching ads iCafes.",
-    });
-  }
+    });
+  }
 });
 
 // Route to fetch user billing info for a specific iCafe
 router.get("/getUserBilling", async (req, res) => {
   const { username, icafe_id } = req.query;
-
+  console.log(req.query);
   try {
     const userBilling = await services.getUserBilling(username, icafe_id);
     res.json(userBilling);

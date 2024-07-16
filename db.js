@@ -26,5 +26,18 @@ const db3 = mysql.createPool({
   password: "server408",
   database: "orion",
 });
-
-module.exports = { db, db1, db2, db3 };
+const getDatabaseById = (icafe_id) => {
+  // Ensure icafe_id is treated as a number
+  const id = Number(icafe_id);
+  switch (id) {
+    case 1:
+      return db1;
+    case 2:
+      return db2;
+    case 3:
+      return db3;
+    default:
+      return db;
+  }
+};
+module.exports = { getDatabaseById, db, db1, db2, db3 };

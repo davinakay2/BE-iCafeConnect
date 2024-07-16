@@ -2,13 +2,15 @@ const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require("uuid");
 const { db, db1, db2, db3 } = require("../db");
+const fs = require("fs");
+const path = require("path");
 
 const { createMidtransTransaction } = require("../services/paymentServices");
 
 // Route handling function
 router.post("/topupBilling", async (req, res) => {
   const { billing_price_id, payment_method, user_id } = req.body;
-
+  console.log(req.body);
   try {
     // Check if user_id is provided
     if (user_id === undefined) {
@@ -41,7 +43,7 @@ router.post("/topupBilling", async (req, res) => {
 
     // Fetch username_binding from the binding_account table
     const [bindingResults] = await db.execute(
-      "SELECT username_binding FROM binding_account WHERE userid = ?",
+      "SELECT username_binding FROM binding_account WHERE user_id = ?",
       [user_id]
     );
 
@@ -53,7 +55,9 @@ router.post("/topupBilling", async (req, res) => {
 
     // Determine the appropriate database based on icafe_id
     const dbToUse = (icafe_id) => {
-      switch (icafe_id) {
+      // Ensure icafe_id is treated as a number
+      const id = Number(icafe_id);
+      switch (id) {
         case 1:
           return db1;
         case 2:
@@ -136,9 +140,9 @@ router.post("/topupBilling", async (req, res) => {
 
 router.get("/getTransactionBillingHistory", async (req, res) => {
   const user_id = req.query.user_id;
-
+  console.log(req.query.user_id);
   try {
-    const [getTransactionBillingHistory] = await db.execute(
+    const [transactions] = await db.execute(
       `SELECT icafe_transaction_id, ii.name, date, bp.hours, id.pc_category, bp.price, payment_method, ii.image_url
             FROM icafe_transactions it 
             JOIN billing_price bp ON it.billing_price_id = bp.billing_price_id
@@ -149,7 +153,30 @@ router.get("/getTransactionBillingHistory", async (req, res) => {
       [user_id]
     );
 
-    res.json(getTransactionBillingHistory);
+    const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
+    const formattedTransactions = transactions.map((transaction) => {
+      if (transaction.image_url) {
+        const imagePath = path.join(__dirname, "..", transaction.image_url);
+        if (fs.existsSync(imagePath)) {
+          const image = fs.readFileSync(imagePath);
+          const base64Image = Buffer.from(image).toString("base64");
+          return {
+            ...transaction,
+            image_url: `${serverBaseUrl}${transaction.image_url}`,
+            image: base64Image,
+          };
+        } else {
+          return {
+            ...transaction,
+            image_url: `${serverBaseUrl}${transaction.image_url}`,
+            image: null,
+          };
+        }
+      }
+      return transaction;
+    });
+
+    res.json(formattedTransactions);
   } catch (error) {
     console.error(
       "Error in getting Transaction Billing History:",
@@ -165,12 +192,10 @@ router.post("/topupEwallet", async (req, res) => {
   try {
     // Check if user_id and topup_amount are provided and topup_amount is a number
     if (!user_id || !topup_amount || isNaN(topup_amount)) {
-      return res
-        .status(400)
-        .json({
-          error:
-            "Invalid input data. Please provide user_id, topup_amount (as a number), and payment_method.",
-        });
+      return res.status(400).json({
+        error:
+          "Invalid input data. Please provide user_id, topup_amount (as a number), and payment_method.",
+      });
     }
 
     const orderId = uuidv4(); // Generate a unique order ID
@@ -223,7 +248,7 @@ router.post("/topupEwallet", async (req, res) => {
       [newBalance, user_id]
     );
 
-    await insertEwalletTopupHistory(ewallet_transaction_id, user_id);
+    // await insertEwalletTopupHistory(ewallet_transaction_id, user_id);
 
     res.json({ message: "eWallet top-up successful" });
   } catch (error) {
@@ -267,7 +292,7 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
     // Fetch username_binding from the binding_account table
     const [bindingResults] = await db.execute(
-      "SELECT username_binding FROM binding_account WHERE userid = ?",
+      "SELECT username_binding FROM binding_account WHERE user_id = ?",
       [user_id]
     );
 
@@ -361,11 +386,11 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
       [hours, account_id]
     );
 
-    await insertICafeBillingHistory(
-      icafe_transaction_id,
-      user_id,
-      billing_price_id
-    );
+    // await insertICafeBillingHistory(
+    //   icafe_transaction_id,
+    //   user_id,
+    //   billing_price_id
+    // );
 
     res.json({ message: "Payment successful" });
   } catch (error) {
@@ -376,6 +401,7 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
 router.get("/getEWalletTransactionHistory", async (req, res) => {
   const user_id = req.query.user_id;
+  console.log(user_id);
 
   try {
     const [getEWalletTransactionHistory] = await db.execute(
@@ -396,7 +422,7 @@ router.get("/getEWalletTransactionHistory", async (req, res) => {
         WHERE 
             it.payment_method = 'e-wallet'
         AND 
-            it.userid = 1
+            it.userid = ?
 
         UNION ALL
 
@@ -409,11 +435,11 @@ router.get("/getEWalletTransactionHistory", async (req, res) => {
         FROM 
             ewallet_transactions et
         WHERE 
-            et.userid = 1
+            et.userid = ?
 
         ORDER BY 
             transaction_date DESC, transaction_time DESC;`,
-      [user_id]
+      [user_id, user_id]
     );
     res.json(getEWalletTransactionHistory);
   } catch (error) {
@@ -425,4 +451,4 @@ router.get("/getEWalletTransactionHistory", async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;

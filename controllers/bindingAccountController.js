@@ -1,13 +1,23 @@
 const express = require("express"),
-router = express.Router();
+  router = express.Router();
 
 const service = require("../services/bindingAccountServices");
 
 router.post("/validateAccount", async (req, res) => {
-  const { user_id, icafe_id, username: userBody, password: passwordBody } = req.body;
-
+  const {
+    user_id,
+    icafe_id,
+    username: userBody,
+    password: passwordBody,
+  } = req.body;
+  console.log(req.body);
   try {
-    const validateAccount = await service.validateAccount(user_id, icafe_id, userBody, passwordBody);
+    const validateAccount = await service.validateAccount(
+      user_id,
+      icafe_id,
+      userBody,
+      passwordBody
+    );
 
     if (!validateAccount) {
       res.status(404).json("Username Or Password is Wrong!");
@@ -38,30 +48,31 @@ router.post("/insertAccount", async (req, res) => {
 });
 
 router.post("/unbindAccount", async (req, res) => {
-  const binding_id = req.query.binding_id;
-
+  const binding_id = req.body.bindingId;
+  console.log(binding_id);
   try {
     const unbindResult = await service.unbindAccount(binding_id);
-
-    res.status(201).send("Undbind Successfull!");
+    res.status(201).json({
+      message: "Unbind Successful!",
+      data: unbindResult,
+    });
   } catch (error) {
-    console.error("Error creating account:", error);
+    console.error("Error unbinding account:", error);
     res.status(500).send("Internal Server Error");
   }
 });
 
 router.get("/getBindAccount", async (req, res) => {
   const user_id = req.query.user_id;
-  console.log(user_id)
+  console.log(req.query.user_id);
   try {
     const insertResult = await service.getBindAccount(user_id);
-
-    res.json(insertResult)
+    console.log(user_id);
+    res.json(insertResult);
   } catch (error) {
     console.error("Error creating account:", error);
     res.status(500).send("Internal Server Error");
-  }
+  }
 });
-
 
 module.exports = router;
