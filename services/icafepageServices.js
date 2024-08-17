@@ -1,9 +1,11 @@
-const { db } = require("../db");
+const { getDatabaseById, getDatabaseNameById, db, db1, db2, db3 } = require("../db");
 
 // Function to fetch all PC categories for a given icafe_id
 module.exports.getPCCategories = async (icafe_id) => {
   try {
-    const [categories] = await db.query(
+    const selectedDb = getDatabaseById(icafe_id);
+
+    const [categories] = await selectedDb.query(
       "SELECT DISTINCT pc_category FROM icafe_details WHERE icafe_id = ?;",
       [icafe_id]
     );
@@ -17,7 +19,9 @@ module.exports.getPCCategories = async (icafe_id) => {
 // Function to fetch PC billing info for a specific pc_category
 module.exports.getPCBillingInfo = async (icafe_id, pc_category) => {
   try {
-    const [billingInfo] = await db.query(
+    const selectedDb = getDatabaseById(icafe_id);
+
+    const [billingInfo] = await selectedDb.query(
       "SELECT icafe_detail_id, pc_category, total_computers, available_computers FROM icafe_details WHERE icafe_id = ? AND pc_category = ?;",
       [icafe_id, pc_category]
     );
@@ -29,9 +33,11 @@ module.exports.getPCBillingInfo = async (icafe_id, pc_category) => {
 };
 
 // Function to fetch computer specifications for a given icafe_detail_id
-module.exports.getComputerSpecifications = async (icafe_detail_id) => {
+module.exports.getComputerSpecifications = async (icafe_detail_id, icafe_id) => {
   try {
-    const [specifications] = await db.query(
+    const selectedDb = getDatabaseById(icafe_id);
+
+    const [specifications] = await selectedDb.query(
       "SELECT icafe_detail_id, pc_category, description, processor, vga, monitor, keyboard, mouse, headset FROM icafe_details WHERE icafe_detail_id = ?;",
       [icafe_detail_id]
     );
@@ -43,9 +49,11 @@ module.exports.getComputerSpecifications = async (icafe_detail_id) => {
 };
 
 // Function to fetch billing prices for a given icafe_detail_id
-module.exports.getBillingPrices = async (icafe_detail_id) => {
+module.exports.getBillingPrices = async (icafe_detail_id, icafe_id) => {
   try {
-    const [prices] = await db.query(
+    const selectedDb = getDatabaseById(icafe_id);
+
+    const [prices] = await selectedDb.query(
       "SELECT billing_price_id, hours, price FROM billing_price WHERE icafe_detail_id = ?;",
       [icafe_detail_id]
     );
