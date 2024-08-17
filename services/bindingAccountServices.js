@@ -130,7 +130,7 @@ module.exports.unbindAccount = async (binding_id) => {
 
 module.exports.getBindAccount = async (user_id) => {
   const [getBindAccount] = await db.query(
-    `SELECT binding_id, username_binding, ii.name FROM binding_account ba JOIN icafe_info ii on ba.icafe_id = ii.icafe_id WHERE ba.user_id = ?`,
+    `SELECT binding_id, username_binding, ii.name, ba.icafe_id FROM binding_account ba JOIN icafe_info ii on ba.icafe_id = ii.icafe_id WHERE ba.user_id = ?`,
     [user_id]
   );
   return getBindAccount;

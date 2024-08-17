@@ -5,12 +5,12 @@ const fs = require("fs");
 module.exports.getFeaturediCafes = async () => {
   try {
     const [icafes] = await db.query(
-      "SELECT name, address, rating, image_url, icafe_id FROM icafe_info WHERE featuredYN = 'Y';"
+      "SELECT name, address, rating, image_url, icafe_id, open_time, close_time FROM icafe_info WHERE featuredYN = 'Y';"
     );
     console.log(icafes);
     // Format the image URLs to include the server base URL and convert to base64
     const formattedICafes = icafes.map((icafe) => {
-      const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
+      const serverBaseUrl = "http://localhost:3000";
       if (icafe.image_url) {
         const imagePath = path.join(__dirname, "..", icafe.image_url);
         if (fs.existsSync(imagePath)) {
