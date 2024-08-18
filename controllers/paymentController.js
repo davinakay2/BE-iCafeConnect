@@ -1,7 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const { v4: uuidv4 } = require("uuid");
-const { db, db1, db2, db3 } = require("../db");
+const {
+  db,
+  db1,
+  db2,
+  db3,
+  getDatabaseById,
+  getDatabaseNameById,
+  allDatabaseNames,
+} = require("../db");
 const fs = require("fs");
 const path = require("path");
 
@@ -9,7 +17,7 @@ const { createMidtransTransaction } = require("../services/paymentServices");
 
 // Route handling function
 router.post("/topupBilling", async (req, res) => {
-  const { billing_price_id, payment_method, user_id } = req.body;
+  const { billing_price_id, payment_method, user_id, icafe_id } = req.body;
   console.log(req.body);
   try {
     // Check if user_id is provided
@@ -17,8 +25,10 @@ router.post("/topupBilling", async (req, res) => {
       return res.status(400).json({ error: "userid is required" });
     }
 
+    const selectedDb = getDatabaseById(icafe_id);
+
     // Fetch billing price details and icafe_detail_id from your database
-    const [billingResults] = await db.execute(
+    const [billingResults] = await selectedDb.execute(
       "SELECT price, icafe_detail_id, hours FROM billing_price WHERE billing_price_id = ?",
       [billing_price_id]
     );
@@ -30,8 +40,8 @@ router.post("/topupBilling", async (req, res) => {
     const { price, icafe_detail_id, hours } = billingResults[0];
 
     // Fetch icafe_id and pc_category using icafe_detail_id
-    const [icafeResults] = await db.execute(
-      "SELECT icafe_id, pc_category FROM icafe_details WHERE icafe_detail_id = ?",
+    const [icafeResults] = await selectedDb.execute(
+      "SELECT pc_category FROM icafe_details WHERE icafe_detail_id = ?",
       [icafe_detail_id]
     );
 
@@ -39,11 +49,11 @@ router.post("/topupBilling", async (req, res) => {
       return res.status(404).json({ error: "iCafe details not found" });
     }
 
-    const { icafe_id, pc_category } = icafeResults[0];
+    const { pc_category } = icafeResults[0];
 
     // Fetch username_binding from the binding_account table
     const [bindingResults] = await db.execute(
-      "SELECT username_binding FROM binding_account WHERE user_id = ?",
+      "SELECT username_binding FROM binding_account WHERE userid = ?",
       [user_id]
     );
 
@@ -54,23 +64,23 @@ router.post("/topupBilling", async (req, res) => {
     const { username_binding } = bindingResults[0];
 
     // Determine the appropriate database based on icafe_id
-    const dbToUse = (icafe_id) => {
-      // Ensure icafe_id is treated as a number
-      const id = Number(icafe_id);
-      switch (id) {
-        case 1:
-          return db1;
-        case 2:
-          return db2;
-        case 3:
-          return db3;
-        default:
-          return db;
-      }
-    };
+    // const dbToUse = (icafe_id) => {
+    //   // Ensure icafe_id is treated as a number
+    //   const id = Number(icafe_id);
+    //   switch (id) {
+    //     case 1:
+    //       return db1;
+    //     case 2:
+    //       return db2;
+    //     case 3:
+    //       return db3;
+    //     default:
+    //       return db;
+    //   }
+    // };
 
     // Fetch username from the accounts table using username_binding
-    const [accountResults] = await dbToUse(icafe_id).execute(
+    const [accountResults] = await selectedDb.execute(
       "SELECT account_id FROM accounts WHERE username = ?",
       [username_binding]
     );
@@ -112,8 +122,8 @@ router.post("/topupBilling", async (req, res) => {
 
     // Insert transaction history into your database
     await db.execute(
-      "INSERT INTO icafe_transactions (billing_price_id, userid, payment_method, time, date) VALUES (?, ?, ?, NOW(), NOW())",
-      [billing_price_id, user_id, payment_method]
+      "INSERT INTO icafe_transactions (billing_price_id, user_id, payment_method, icafe_id, time, date) VALUES (?, ?, ?, ?, NOW(), NOW())",
+      [billing_price_id, user_id, payment_method, icafe_id]
     );
 
     // Fetch the inserted icafe_transaction_id
@@ -124,7 +134,7 @@ router.post("/topupBilling", async (req, res) => {
     const { icafe_transaction_id } = transactionResult[0];
 
     // Update the appropriate billing column in the accounts table by adding hours
-    await dbToUse(icafe_id).execute(
+    await selectedDb.execute(
       `UPDATE accounts SET ${billingColumn} = ADDTIME(${billingColumn}, SEC_TO_TIME(? * 3600)) WHERE account_id = ?`,
       [hours, account_id]
     );
@@ -138,23 +148,52 @@ router.post("/topupBilling", async (req, res) => {
   }
 });
 
-router.get("/getTransactionBillingHistory", async (req, res) => {
-  const user_id = req.query.user_id;
-  console.log(req.query.user_id);
+async function getTransactions(user_id, databaseName) {
   try {
-    const [transactions] = await db.execute(
-      `SELECT icafe_transaction_id, ii.name, date, bp.hours, id.pc_category, bp.price, payment_method, ii.image_url
-            FROM icafe_transactions it 
-            JOIN billing_price bp ON it.billing_price_id = bp.billing_price_id
-            JOIN icafe_details id on bp.icafe_detail_id = id.icafe_detail_id
-            JOIN icafe_info ii on id.icafe_id = ii.icafe_id
-            WHERE it.userid = ?
-            ORDER BY it.date DESC;`,
+    const [transactions] = await db.query(
+      `SELECT it.icafe_transaction_id, ii.name, it.date, bp.hours, id.pc_category, bp.price, it.payment_method, ii.image_url, it.time
+       FROM icafe_transactions it 
+       JOIN ${databaseName}.billing_price bp ON it.billing_price_id = bp.billing_price_id
+       JOIN ${databaseName}.icafe_details id ON bp.icafe_detail_id = id.icafe_detail_id
+       JOIN icafe_info ii ON it.icafe_id = ii.icafe_id
+       WHERE it.user_id = ?
+       ORDER BY it.time DESC;`,
       [user_id]
     );
+    return transactions;
+  } catch (error) {
+    console.log("getTransaction error");
+  }
+}
+
+router.get("/getTransactionBillingHistory", async (req, res) => {
+  const user_id = req.query.user_id;
+  try {
+    // Get the list of database names
+    const databaseNames = allDatabaseNames;
+
+    // Fetch transactions from all databases
+    const transactionsPromises = databaseNames.map((databaseName) =>
+      getTransactions(user_id, databaseName)
+    );
+
+    const allTransactions = await Promise.all(transactionsPromises);
+
+    const uniqueTime = new Set();
+    const uniqueTransactions = [];
+
+    allTransactions.forEach((transaction) => {
+      const key = `${transaction.transaction_date}-${transaction.transaction_time}`;
+      if (!uniqueTime.has(key)) {
+        uniqueTime.add(key);
+        uniqueTransactions.push(transaction);
+      }
+    });
+
+    const distinctResults = Array.from(uniqueTransactions[0].values());
 
     const serverBaseUrl = "http://localhost:3000"; // Update with your server's base URL
-    const formattedTransactions = transactions.map((transaction) => {
+    const formattedTransactions = distinctResults.map((transaction) => {
       if (transaction.image_url) {
         const imagePath = path.join(__dirname, "..", transaction.image_url);
         if (fs.existsSync(imagePath)) {
@@ -258,7 +297,8 @@ router.post("/topupEwallet", async (req, res) => {
 });
 
 router.post("/topupBillingWithEwallet", async (req, res) => {
-  const { billing_price_id, user_id } = req.body;
+  const { billing_price_id, user_id, icafe_id } = req.body;
+  console.log("topupBillingWithEwallet", req.body);
 
   try {
     // Check if user_id is provided
@@ -266,8 +306,10 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
       return res.status(400).json({ error: "user_id is required" });
     }
 
+    const selectedDb = getDatabaseById(icafe_id);
+
     // Fetch billing price details and icafe_detail_id from your database
-    const [billingResults] = await db.execute(
+    const [billingResults] = await selectedDb.execute(
       "SELECT price, icafe_detail_id, hours FROM billing_price WHERE billing_price_id = ?",
       [billing_price_id]
     );
@@ -279,8 +321,8 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
     const { price, icafe_detail_id, hours } = billingResults[0];
 
     // Fetch icafe_id and pc_category using icafe_detail_id
-    const [icafeResults] = await db.execute(
-      "SELECT icafe_id, pc_category FROM icafe_details WHERE icafe_detail_id = ?",
+    const [icafeResults] = await selectedDb.execute(
+      "SELECT pc_category FROM icafe_details WHERE icafe_detail_id = ?",
       [icafe_detail_id]
     );
 
@@ -288,11 +330,11 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
       return res.status(404).json({ error: "iCafe details not found" });
     }
 
-    const { icafe_id, pc_category } = icafeResults[0];
+    const { pc_category } = icafeResults[0];
 
     // Fetch username_binding from the binding_account table
     const [bindingResults] = await db.execute(
-      "SELECT username_binding FROM binding_account WHERE user_id = ?",
+      "SELECT username_binding FROM binding_account WHERE userid = ?",
       [user_id]
     );
 
@@ -302,22 +344,22 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
     const { username_binding } = bindingResults[0];
 
-    // Determine the appropriate database based on icafe_id
-    const dbToUse = (icafe_id) => {
-      switch (icafe_id) {
-        case 1:
-          return db1;
-        case 2:
-          return db2;
-        case 3:
-          return db3;
-        default:
-          return db;
-      }
-    };
+    // // Determine the appropriate database based on icafe_id
+    // const dbToUse = (icafe_id) => {
+    //   switch (icafe_id) {
+    //     case 1:
+    //       return db1;
+    //     case 2:
+    //       return db2;
+    //     case 3:
+    //       return db3;
+    //     default:
+    //       return db;
+    //   }
+    // };
 
     // Fetch username from the accounts table using username_binding
-    const [accountResults] = await dbToUse(icafe_id).execute(
+    const [accountResults] = await selectedDb.execute(
       "SELECT account_id FROM accounts WHERE username = ?",
       [username_binding]
     );
@@ -353,8 +395,8 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
     // Insert transaction into icafe_transactions
     await db.execute(
-      "INSERT INTO icafe_transactions (billing_price_id, userid, payment_method, time, date) VALUES (?, ?, ?, NOW(), NOW())",
-      [billing_price_id, user_id, "e-wallet"]
+      "INSERT INTO icafe_transactions (billing_price_id, user_id, payment_method, icafe_id, time, date) VALUES (?, ?, ?, ?, NOW(), NOW())",
+      [billing_price_id, user_id, "e-wallet", icafe_id]
     );
 
     // Fetch the inserted icafe_transaction_id
@@ -381,7 +423,7 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
     }
 
     // Update the appropriate billing column in the accounts table by adding hours
-    await dbToUse(icafe_id).execute(
+    await selectedDb.execute(
       `UPDATE accounts SET ${billingColumn} = ADDTIME(${billingColumn}, SEC_TO_TIME(? * 3600)) WHERE account_id = ?`,
       [hours, account_id]
     );
@@ -394,17 +436,14 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
     res.json({ message: "Payment successful" });
   } catch (error) {
-    console.error("Error in topupBilling:", error.message);
+    console.error("Error in topupBillingEwallet:", error.message);
     res.status(500).json({ error: "Transaction failed" });
   }
 });
 
-router.get("/getEWalletTransactionHistory", async (req, res) => {
-  const user_id = req.query.user_id;
-  console.log(user_id);
-
+async function getTransactionsEWallet(user_id, databaseName) {
   try {
-    const [getEWalletTransactionHistory] = await db.execute(
+    const [transactions] = await db.query(
       `SELECT 
         ii.name AS icafe_name,
         it.date AS transaction_date,
@@ -414,15 +453,13 @@ router.get("/getEWalletTransactionHistory", async (req, res) => {
         FROM 
             icafe_transactions it
         JOIN 
-            billing_price bp ON it.billing_price_id = bp.billing_price_id
+            ${databaseName}.billing_price bp ON it.billing_price_id = bp.billing_price_id
         JOIN 
-            icafe_details id ON bp.icafe_detail_id = id.icafe_detail_id
-        JOIN 
-            icafe_info ii ON id.icafe_id = ii.icafe_id
+            icafe_info ii ON it.icafe_id = ii.icafe_id
         WHERE 
             it.payment_method = 'e-wallet'
         AND 
-            it.userid = ?
+            it.user_id = ?
 
         UNION ALL
 
@@ -441,7 +478,41 @@ router.get("/getEWalletTransactionHistory", async (req, res) => {
             transaction_date DESC, transaction_time DESC;`,
       [user_id, user_id]
     );
-    res.json(getEWalletTransactionHistory);
+    return transactions;
+  } catch (error) {
+    console.log("getTransaction error");
+  }
+}
+
+router.get("/getEWalletTransactionHistory", async (req, res) => {
+  const user_id = req.query.user_id;
+  console.log(user_id);
+
+  try {
+    const databaseNames = allDatabaseNames;
+
+    // Fetch transactions from all databases
+    const transactionsPromises = databaseNames.map((databaseName) =>
+      getTransactionsEWallet(user_id, databaseName)
+    );
+
+    const allTransactions = await Promise.all(transactionsPromises);
+
+    // Create a Set to keep track of unique prices
+    const uniqueTime = new Set();
+    const uniqueTransactions = [];
+
+    allTransactions.forEach((transaction) => {
+      const key = `${transaction.transaction_date}-${transaction.transaction_time}`;
+      if (!uniqueTime.has(key)) {
+        uniqueTime.add(key);
+        uniqueTransactions.push(transaction);
+      }
+    });
+
+    const distinctResults = Array.from(uniqueTransactions[0].values());
+
+    res.json(distinctResults);
   } catch (error) {
     console.error(
       "Error in getting E-Wallet Transaction History:",

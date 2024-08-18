@@ -36,10 +36,12 @@ router.post("/insertAccount", async (req, res) => {
   try {
     const insertResult = await service.insertAccount(icafeIdBody, userIdBody);
 
+    console.log(insertResult);
+
     if (insertResult.affectedRows != 0) {
-      res.status(201).send("Account Created Successfully!");
+      res.status(200).send(insertResult);
     } else {
-      res.status(404).send("Unsuccessful Account Creation");
+      res.status(404).send(insertResult);
     }
   } catch (error) {
     console.error("Error creating account:", error);

@@ -3,27 +3,31 @@ const mysql = require("mysql2/promise");
 const db = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "root123",
+  password: "server408",
+  connectionLimit: 10,
   database: "icafes",
 });
 
 const db1 = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "root123",
+  password: "server408",
+  connectionLimit: 10,
   database: "gamers_paradise",
 });
 
 const db2 = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "root123",
+  password: "server408",
+  connectionLimit: 10,
   database: "tokyo_gaming_space",
 });
 const db3 = mysql.createPool({
   host: "localhost",
   user: "root",
-  password: "root123",
+  password: "server408",
+  connectionLimit: 10,
   database: "high_grounds_pik",
 });
 const getDatabaseById = (icafe_id) => {
@@ -56,5 +60,19 @@ const getDatabaseNameById = (icafe_id) => {
   }
 };
 
+const allDatabaseNames = [
+  "gamers_paradise",
+  "tokyo_gaming_space",
+  "high_grounds_pik",
+];
+
 // module.exports = { getDatabaseById, db, db1, db2, db3 };
-module.exports = { getDatabaseById, getDatabaseNameById, db, db1, db2, db3};
+module.exports = {
+  getDatabaseById,
+  getDatabaseNameById,
+  db,
+  db1,
+  db2,
+  db3,
+  allDatabaseNames,
+};

@@ -1,4 +1,11 @@
-const { getDatabaseById, getDatabaseNameById, db, db1, db2, db3 } = require("../db");
+const {
+  getDatabaseById,
+  getDatabaseNameById,
+  db,
+  db1,
+  db2,
+  db3,
+} = require("../db");
 
 // Function to fetch all PC categories for a given icafe_id
 module.exports.getPCCategories = async (icafe_id) => {
@@ -20,10 +27,12 @@ module.exports.getPCCategories = async (icafe_id) => {
 module.exports.getPCBillingInfo = async (icafe_id, pc_category) => {
   try {
     const selectedDb = getDatabaseById(icafe_id);
+    console.log(selectedDb);
+    console.log(icafe_id);
 
     const [billingInfo] = await selectedDb.query(
-      "SELECT icafe_detail_id, pc_category, total_computers, available_computers FROM icafe_details WHERE icafe_id = ? AND pc_category = ?;",
-      [icafe_id, pc_category]
+      "SELECT icafe_detail_id, pc_category, total_computers, available_computers FROM icafe_details WHERE pc_category = ?;",
+      [pc_category]
     );
     return billingInfo[0];
   } catch (error) {
@@ -33,7 +42,10 @@ module.exports.getPCBillingInfo = async (icafe_id, pc_category) => {
 };
 
 // Function to fetch computer specifications for a given icafe_detail_id
-module.exports.getComputerSpecifications = async (icafe_detail_id, icafe_id) => {
+module.exports.getComputerSpecifications = async (
+  icafe_detail_id,
+  icafe_id
+) => {
   try {
     const selectedDb = getDatabaseById(icafe_id);
 
@@ -50,7 +62,10 @@ module.exports.getComputerSpecifications = async (icafe_detail_id, icafe_id) => 
 
 // Function to fetch billing prices for a given icafe_detail_id
 module.exports.getBillingPrices = async (icafe_detail_id, icafe_id) => {
+  console.log(icafe_id);
+
   try {
+    console.log("icafe_id:", icafe_id);
     const selectedDb = getDatabaseById(icafe_id);
 
     const [prices] = await selectedDb.query(

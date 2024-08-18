@@ -36,12 +36,15 @@ router.get("/getPCBillingInfo", async (req, res) => {
 // Route to fetch computer specifications for a given icafe_detail_id
 router.get("/getComputerSpecifications", async (req, res) => {
   try {
-    const { icafe_detail_id } = req.query;
-    if (!icafe_detail_id) {
+    const { icafe_detail_id, icafe_id } = req.query;
+    console.log(icafe_id);
+    console.log(icafe_detail_id);
+    if (!icafe_detail_id || !icafe_id) {
       return res.status(400).send("Missing icafe_detail_id parameter");
     }
     const specifications = await services.getComputerSpecifications(
-      icafe_detail_id
+      icafe_detail_id,
+      icafe_id
     );
     res.json(specifications);
   } catch (error) {
@@ -55,11 +58,11 @@ router.get("/getComputerSpecifications", async (req, res) => {
 // Route to fetch billing prices for a given icafe_detail_id
 router.get("/getBillingPrices", async (req, res) => {
   try {
-    const { icafe_detail_id } = req.query;
+    const { icafe_detail_id, icafe_id } = req.query;
     if (!icafe_detail_id) {
       return res.status(400).send("Missing icafe_detail_id parameter");
     }
-    const prices = await services.getBillingPrices(icafe_detail_id);
+    const prices = await services.getBillingPrices(icafe_detail_id, icafe_id);
     res.json(prices);
   } catch (error) {
     console.error("Error fetching billing prices:", error);

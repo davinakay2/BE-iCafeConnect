@@ -43,7 +43,6 @@ router.get("/getAdsiCafes", async (req, res) => {
 // Route to fetch user billing info for a specific iCafe
 router.get("/getUserBilling", async (req, res) => {
   const { username, icafe_id } = req.query;
-  console.log(req.query);
   try {
     const userBilling = await services.getUserBilling(username, icafe_id);
     res.json(userBilling);

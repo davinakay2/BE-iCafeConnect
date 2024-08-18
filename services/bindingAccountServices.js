@@ -41,14 +41,14 @@ module.exports.validateAccount = async (
         if (existingBinding.length > 0) {
           // Update user_id in binding_account table
           await db.query(
-            "UPDATE binding_account SET user_id = ? WHERE username_binding = ?",
+            "UPDATE binding_account SET userid = ? WHERE username_binding = ?",
             [user_id, user.username]
           );
         } else {
           // Insert into binding_account table
           const hashedPassword = await bcrypt.hash(password, 10);
           await db.query(
-            "INSERT INTO binding_account (user_id, icafe_id, username_binding, password_binding) VALUES (?, ?, ?, ?)",
+            "INSERT INTO binding_account (userid, icafe_id, username_binding, password_binding) VALUES (?, ?, ?, ?)",
             [user_id, icafe_id, user.username, hashedPassword]
           );
         }
@@ -83,7 +83,7 @@ module.exports.insertAccount = async (icafe_id, userId) => {
 
   try {
     // Fetch username and password from icafe_users table using userid
-    const [userResult] = await selectedDb.query(
+    const [userResult] = await db.query(
       "SELECT username, password FROM icafe_users WHERE userid = ?;",
       [userId]
     );
@@ -93,6 +93,8 @@ module.exports.insertAccount = async (icafe_id, userId) => {
     }
 
     const { username, password } = userResult[0];
+    console.log("username", username);
+    console.log("password", password);
     const iccUsername = `icc${username}`;
 
     // Check if the username already exists in the accounts table
@@ -101,20 +103,60 @@ module.exports.insertAccount = async (icafe_id, userId) => {
       [iccUsername]
     );
 
+    let token;
     if (existingAccount.length > 0) {
-      return { message: `Username ${iccUsername} already exists in accounts.` };
+      console.log(iccUsername);
+      console.log(password);
+      const [loginBinding] = await db.query(
+        "SELECT username_binding FROM binding_account WHERE username_binding = ? AND password_binding = ?",
+        [iccUsername, password]
+      );
+
+      console.log("loginbinding", loginBinding);
+
+      if (loginBinding.length > 0) {
+        const [updateBindingUserId] = await db.query(
+          "UPDATE binding_account SET userid = ? WHERE username_binding = ?",
+          [userId, iccUsername]
+        );
+        token = jwt.sign({ id: userId, username: iccUsername }, JWT_SECRET, {
+          expiresIn: "1y",
+        });
+
+        return {
+          message: "Login Successful",
+          username: iccUsername,
+          token: token,
+        };
+      } else {
+        return {
+          message: "Login Not Successful",
+          username: iccUsername,
+        };
+      }
+    } else {
+      // Insert a new record into the accounts table using fetched username and password
+      const [insertAccount] = await selectedDb.query(
+        "INSERT INTO accounts (username, password, regular_billing, vip_billing, vvip_billing) VALUES (?, ?, '00:00:00', '00:00:00', '00:00:00');",
+        [iccUsername, password]
+      );
+
+      const [insertBindingAccount] = await db.query(
+        "INSERT INTO binding_account (userid, icafe_id, username_binding, password_binding) VALUES (?, ?, ?, ?)",
+        [userId, icafe_id, iccUsername, password]
+      );
+
+      token = jwt.sign({ id: userId, username: iccUsername }, JWT_SECRET, {
+        expiresIn: "1y",
+      });
+
+      return {
+        affectedRows: insertAccount.affectedRows,
+        message: "Account Created Successfully!",
+        username: iccUsername,
+        token: token,
+      };
     }
-
-    // Insert a new record into the accounts table using fetched username and password
-    const [insertAccount] = await selectedDb.query(
-      "INSERT INTO accounts (username, password, regular_billing, vip_billing, vvip_billing) VALUES (?, ?, '00:00:00', '00:00:00', '00:00:00');",
-      [iccUsername, password]
-    );
-
-    return {
-      affectedRows: insertAccount.affectedRows,
-      message: "Account Created Successfully!",
-    };
   } catch (error) {
     throw new Error(`Error inserting account: ${error.message}`);
   }
@@ -130,7 +172,7 @@ module.exports.unbindAccount = async (binding_id) => {
 
 module.exports.getBindAccount = async (user_id) => {
   const [getBindAccount] = await db.query(
-    `SELECT binding_id, username_binding, ii.name, ba.icafe_id FROM binding_account ba JOIN icafe_info ii on ba.icafe_id = ii.icafe_id WHERE ba.user_id = ?`,
+    `SELECT binding_id, username_binding, ii.name, ba.icafe_id FROM binding_account ba JOIN icafe_info ii on ba.icafe_id = ii.icafe_id WHERE ba.userid = ?`,
     [user_id]
   );
   return getBindAccount;
