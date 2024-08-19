@@ -30,7 +30,7 @@ router.post("/login", async (req, res) => {
 
   const userValidation = await service.userValidity(userBody);
   if (userValidation.length == 0) {
-    return res.status(404).json("Account is not Registered!");
+    return res.status(405).json("Account is not Registered!");
   }
 
   const user = await service.loginVerification(userBody, passwordBody);

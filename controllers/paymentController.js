@@ -157,7 +157,7 @@ async function getTransactions(user_id, databaseName) {
        JOIN ${databaseName}.icafe_details id ON bp.icafe_detail_id = id.icafe_detail_id
        JOIN icafe_info ii ON it.icafe_id = ii.icafe_id
        WHERE it.user_id = ?
-       ORDER BY it.time DESC;`,
+       ORDER BY it.date ASC, it.time DESC;`,
       [user_id]
     );
     return transactions;
@@ -344,20 +344,6 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
     const { username_binding } = bindingResults[0];
 
-    // // Determine the appropriate database based on icafe_id
-    // const dbToUse = (icafe_id) => {
-    //   switch (icafe_id) {
-    //     case 1:
-    //       return db1;
-    //     case 2:
-    //       return db2;
-    //     case 3:
-    //       return db3;
-    //     default:
-    //       return db;
-    //   }
-    // };
-
     // Fetch username from the accounts table using username_binding
     const [accountResults] = await selectedDb.execute(
       "SELECT account_id FROM accounts WHERE username = ?",
@@ -384,7 +370,7 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
 
     // Check if the user has sufficient balance
     if (ewallet_balance < price) {
-      return res.status(400).json({ error: "Insufficient e-wallet balance" });
+      return res.status(402).json({ error: "Insufficient e-wallet balance" });
     }
 
     // Deduct the price from the user's e-wallet balance
@@ -428,11 +414,8 @@ router.post("/topupBillingWithEwallet", async (req, res) => {
       [hours, account_id]
     );
 
-    // await insertICafeBillingHistory(
-    //   icafe_transaction_id,
-    //   user_id,
-    //   billing_price_id
-    // );
+    // Optionally, you can call a function to log this transaction into a history table
+    // await insertICafeBillingHistory(icafe_transaction_id, user_id, billing_price_id);
 
     res.json({ message: "Payment successful" });
   } catch (error) {
